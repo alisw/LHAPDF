@@ -1,0 +1,13 @@
+prefix=/home/andy/heplocal
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+datarootdir=${prefix}/share
+
+Name: lhapdf
+Description: LHAPDF parton density library
+URL: https://lhapdf.hepforge.org
+Version: 6.1.5
+Libs: -L${exec_prefix}/lib -lLHAPDF
+Cflags: -I${prefix}/include
+#-I

@@ -1,0 +1,197 @@
+/**
+@page todolist Project to-do list
+
+
+LHAPDF6 TODO list
+=================
+
+
+UNVERSIONED
+-----------
+
+- **Document the lhapdf command**
+
+   On the website
+
+- **JR14 PDF integration**
+
+   Done: release along with v6.1.5
+
+- **MMHT PDF integration**
+
+   Test and release with 6.1.5 (no version requirement)
+
+- **ABM PDF approval**
+
+   Still no response. Remove after new year if no confirmation.
+
+- **HERA 1.0 and LHeC PDF migration and approval**
+
+   Same procedure as for ATLAS and HERA 1.5. Prod Voica for an update.
+
+- **Pion PDF(s)**
+
+
+VERSION 6.1.6
+-------------
+
+- **Python3 support**
+
+- **Provide a single-string-arg version of lookupPDF**
+
+   Needs the signature of the function(s) for PDF string decoding to be final
+   before exposing in the API; it's currently in an anon namespace in Factories.cc.
+
+- **Remove #pragma once -- not fully portable**
+
+- **.LHgrid etc. "tolerance" control -- TranslateLHA5Names flag?**
+
+- **LHAPDF_DATA_PATH non-fallback with trailing ::**
+
+- **Provide optional (AlphaS_)Threshold* keys, hooked into AlphaS factory**
+
+   KARL! Prefer AlphaS_* keys in AlphaS system, fall back to Threshold*
+   versions, then fall back to (AlphaS_)M*. Do we also need to provide a
+   getThreshold(i) function somewhere cf. LHAGlue? Check that the LHAGlue
+   getthresholdm_ etc. are working.
+
+- **Improved high-Q extrapolation (??)**
+
+   Needed for FCC studies, etc.
+
+   At low-Q Graeme suggests extrapolation established from the anomalous
+   dimension of the function within the grid closest to that point.
+
+   What's done in the continuation extrapolator?
+
+- **Improved low/high-x interpolation/extrapolation (??)**
+
+   Gradient extrapolation in log space may be a good option at low-x.
+
+   Graeme, etc.: x -> 1 interpolation should be done carefully to ensure that
+   all PDFs -> 0 at x = 1.0, (usually) without going negative. There should
+   always be a point at x = 1 to root the interpolator. This probably deserves
+   specialisation beyond generic splines. Graeme will look at what's done in the
+   CTEQ code (other than interpolating in x**0.3)
+
+- **Make it possible to find all metadata keys -- both locally and cascaded (AB)**
+
+
+VERSION 6.2
+-----------
+
+- **Allow nPDFs**
+
+   In contact with Hannu. Extend string access syntax to include multiplication
+   of PDFs e.g. mkPDF("foo/0 * bar"), mkPDF("foo * bar/0"), mkPDF("foo * bar")
+   returns PDF <- CompositePDF
+   More general than just nPDFs. Move extended ID string decoding to user-accessible functions.
+
+- **Expose LHAGLUE slots system for C++ use?**
+
+   Automatic memory management can be nice for everyone. Or just leave as pointers?
+
+- **Add num members optional (?) column to pdfsets.index for range-checking**
+
+- **Nuclear PDFs**
+
+   There's definitely a need for interfaces both to individual nuclear modification
+   functions (like PDFs themselves, a function of x,Q2) for application on top
+   of nucleon PDFs, and for all-inclusive nuclear PDFs. Individual "sets" for
+   each nucleus (A) as well as error sets: need to decide on groupings as well
+   as the API. Quite active, cf. "Lisbon Accord".
+
+- **Optimize the grid PDF interpolator code**
+
+   Cache log(x), log(Q) between samplings -> log() still accounts for 15% of
+   CPU: can reduce by factor of 13 in some use cases (only one call for a whole
+   flavour interpolation set at the same point). Below threshold? Sherpa already
+   report performance increases due to being able to interpolated one flavour at
+   a time, so perhaps this use case is not valid in all generators and could be
+   a more complexity than it is worth.
+
+- **Speed up interpolation (MR)**
+
+   Many studies already... and Martin has done the important work to de-Boostify
+   the interpolation grid data objects.
+
+   Report of 6.0.4 slowness relative to LHAPDF5 (on CT10). Weird, we tested this
+   at version 6.0.0 and it was outperforming LHA5. Maybe it is slower for CT10
+   and ~same for CT10nlo. Juan reports that the NNPDF functions are faster.
+
+   Possible speed-ups: caching the last log(x) and log(Q2) values, caching grid
+   index lookup, caching interpolation weights, using a
+   native array implementation in place of Boost::multiarray, doing a faster
+   hybrid search in the grids, GCC builtins for SSE auto-vectorisation.
+
+   Martin has got some speed-up out of a native array implementation, and found
+   no benefit of changing the index search. Andy will look into caching.
+
+- **Remove remaining Boost dependencies / move to C++11 (AB)**
+
+   Boost was being more trouble than it was worth, but maybe now that we're not
+   using the filesystem stuff it is ok. Full removal would require several changes:
+   - multiarray: replace with Martin's array/SSE code
+   - foreach: iterators or require C++11
+   - lexical_cast: stringstream wrappers to_str, from_str (and C++11)
+   - shared_ptr: manual deletes or require C++11
+   - bind: C++11 or something less cool
+   Actually this would be rather good, but requires C++11 which is not an option
+   just yet.
+
+- **Provide a nicer Fortran interface?**
+
+   Surely something nicer than the LHAPDF5 API can be made? Fortran isn't going
+   away from the the theory world. Suggest prefixing all functions with "lhapdf"
+   and basing it on the PDFManager, with explicit commands for switching current PDF.
+
+
+AS AND WHEN
+-----------
+
+
+- **Handle zipped PDF .dat files (AB)**
+
+   Prefer zipped single member data files rather than virtual filesystem access
+   to the tarball. Can transparently read zipped files with LD_PRELOAD and
+   zlibc: is that enough? Add instructions for that to manual/website.
+
+- **Speed up interpolation with GPUs**
+
+   Interpolation of PDFs seems like an potential use case for GPUs, since it's
+   normal to query for all partons in the set at once: if we can load the
+   relevant ipol anchors for all flavours onto the GPU then we can maybe get a
+   substantial speedup. OpenMP did not particuarly help, from quick tests.
+
+- **PDF flavor aliasing mechanism**
+
+   e.g. allow anti-flavours to be identical without duplicating their grids in
+   the data files or memory. How could we implement this?
+
+- **Allow use of valence/sea etc. decompositions**
+
+   GridPDF may be inherited from to allow the returned values to be built from
+   separate interpolations of component PDFs such as interpolated valence, sea,
+   or difference PDFs that are combined to make the physical ones. The PDG ID
+   code range for "generator specific" applications may be used, but we'll need
+   to bear in mind that this will mean that the flavor ID list has different
+   meanings and contents for internal and external purposes: maybe the
+   "internal" PDG ID list needs to become part of the grid data header, or can
+   the metadata be used?
+
+- **Using std::/boost::function to generically modify the interpolation measures in x, Q (AB)**
+
+- **Separate the x and Q2 inter/extrapolation?**
+
+   Allow mix & match combinations. Would this simplify the code since the
+   1D interpolation methods are very simple and the 2D is built from them?
+
+- **Make GridPDFs not read their info or data blocks until an xf value is requested?!**
+
+   Super-laziness! But is there a real gain other than ~1 sec initialization speed?
+
+- **Updated Octave wrapper**
+
+   To come from Phil Ilten if he's interested.
+
+*/
