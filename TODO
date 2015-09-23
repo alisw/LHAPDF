@@ -1,0 +1,24 @@
+LHAPDF TODO
+===========
+
+FOR 5.*:
+
+* Fix compilation with ifort, as reported by Juergen Reuter
+
+* Fix interface with Pythia common block on Mac OS X
+
+
+FOR 6.0.0
+
+* Complete rewrite in C++ with Fortran wrappers
+   !!!
+
+* Add plotting script
+   e.g. lhapdf-query plotxfx <name:mem|id> <x|x1..xn|{x1,...,xn}>
+   <Q|Q1..Qn|{Q1,...,Qn}> <flav|{fl1,...,fln>
+   produces 
+   {no range} -> 1D & 2D scatter plots
+   {1 range}  -> 1D line plot sets
+   {2 ranges} -> 2D map (multiple flavours -> mult sub-plots?)
+   Use Python:Gnuplot or matplotlib/chaco: availability vs. functionality
+   Also as text output?

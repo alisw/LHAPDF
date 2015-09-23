@@ -1,0 +1,881 @@
+
+
+Changelog for LHAPDF
+--------------------
+
+5.9.1 - 24-09-13
+	  Addition of ATLAS sets
+
+	    ATLAS-epWZ12-EIG.LHgrid   65000 - 65030  (1+30 error (+-+-..) sets)
+	    ATLAS-epWZ12-VAR-LHgrid   65040 - 65051  (11 variations of various parameters)
+
+5.9.0 - 15-08-13
+
+	  Addition of NNPDF23qed sets
+
+	    NNPDF23_nlo_as_0117_qed.LHgrid   244400 - 244500
+	    NNPDF23_nlo_as_0118_qed.LHgrid   244600 - 244700
+	    NNPDF23_nlo_as_0119_qed.LHgrid   244800 - 244900
+
+	    NNPDF23_nlo_as_0117_qed_neutron.LHgrid   245000 - 245100
+	    NNPDF23_nlo_as_0118_qed_neutron.LHgrid   245200 - 245300
+	    NNPDF23_nlo_as_0119_qed_neutron.LHgrid   245400 - 245500
+
+	    NNPDF23_nnlo_as_0117_qed.LHgrid   245600 - 245700
+	    NNPDF23_nnlo_as_0118_qed.LHgrid   245800 - 245900
+	    NNPDF23_nnlo_as_0119_qed.LHgrid   246000 - 246100
+
+	    NNPDF23_nnlo_as_0117_qed_neutron.LHgrid   246200 - 246300
+	    NNPDF23_nnlo_as_0118_qed_neutron.LHgrid   246400 - 246500
+	    NNPDF23_nnlo_as_0119_qed_neutron.LHgrid   246600 - 246700
+
+	  Addition of NNPDFpol set
+      
+        NNPDFPol10_100.LHgrid  250000 - 250100
+      
+      Addition of LHeC set
+      
+        LHECNLO_EIG.LHgrid    60900 - 60824
+      
+      Addition of MSTW2008CPdeut sets
+      
+        MSTW2008CPdeutnlo68cl.LHgrid  23800 - 23846
+        MSTW2008CPdeutnlo68cl.LHgrid  23850 - 23896
+        
+      Fix to problem with HERAPDF in the getgrid(....) routine
+      
+      Addition of 'action=READ' to all the 'OPEN' statements in the 
+        'lite' wrappers to remove any ambiguity which might arise as 
+         to the status of the file.  
+    
+
+5.8.9 - 07-03-13
+        Changes as in 5.8.9beta releases
+  
+5.8.9b5  Addition of the CJ12 sets:
+
+          CJ12min.LHgrid     12000 - 12038
+	  CJ12mid.LHgrid     12100 - 12138
+	  CJ12max.LHgrid     12200 - 12238
+
+	  NB these use the same internal code as the CTEQ6 sets
+
+5.8.9b4 - Add NNPDF23_nlo_as_0xxx_mc.LHgrid sets
+         
+	  NNPDF23_nlo_as_0116_mc.LHgrid    241400 - 241500
+	  NNPDF23_nlo_as_0117_mc.LHgrid    241600 - 241700
+	  NNPDF23_nlo_as_0118_mc.LHgrid    241800 - 241900
+	  NNPDF23_nlo_as_0119_mc.LHgrid    242000 - 242100
+	  NNPDF23_nlo_as_0120_mc.LHgrid    242200 - 242300
+
+	  NNPDF23_nlo_FFN_FN4_as_0116_mc.LHgrid    242400 - 242500
+	  NNPDF23_nlo_FFN_FN4_as_0117_mc.LHgrid    242600 - 242700
+	  NNPDF23_nlo_FFN_FN4_as_0118_mc.LHgrid    242800 - 242900
+	  NNPDF23_nlo_FFN_FN4_as_0119_mc.LHgrid    243000 - 243100
+	  NNPDF23_nlo_FFN_FN4_as_0120_mc.LHgrid    243200 - 243300
+
+	  NNPDF23_nlo_FFN_FN5_as_0116_mc.LHgrid    243400 - 243500
+	  NNPDF23_nlo_FFN_FN5_as_0117_mc.LHgrid    243600 - 243700
+	  NNPDF23_nlo_FFN_FN5_as_0118_mc.LHgrid    243800 - 243900
+	  NNPDF23_nlo_FFN_FN5_as_0119_mc.LHgrid    244000 - 244100
+	  NNPDF23_nlo_FFN_FN5_as_0120_mc.LHgrid    244200 - 244300
+
+5.8.9b3 - Fixes errors in 5.8.9b2 
+
+5.8.9b2 - 7-9-12
+    * Added code to make the GetNf function work with the LHgrid files.
+      It had only worked with the .LHpdf sets.  The new code needs new
+      grid files (which have the Nf values built in), but it still works
+      as before with the old files
+
+5.8.9b1 - 1-7-12
+    *  Added function getgridM(nset,ngridx,ngridq,grdix,gridy) to 
+       display the number of x and q2 grid points in the interpolation
+       grid, and the array of point values themselves
+
+    *  Added fix for wrapabm11 code to handle the 'zero' of the top quark pdf
+
+5.8.8 - 10-7-12
+    *    Changes as in '5.8beta' releases
+5.8.8b3 - 15-6-12
+    * Adds code for:-
+       New NNPDF2.3 sets: 
+         NNPDF23_nlo_as_0119             230000 - 230100
+         NNPDF23_nnlo_as_0119            232200 - 232300
+
+         NNPDF23_nlo_noLHC_as_0119       234000 - 234100
+         NNPDF23_nnlo_noLHC_as_0119      235000 - 235100
+
+         NNPDF23_nlo_collider_as_0119    236000 - 236100
+         NNPDF23_nnlo_collider_as_0119   237000 - 237100
+
+         NNPDF23_nlo_nf4_as_0119         238000 - 238100
+         NNPDF23_nnlo_nf4_as_0119        239000 - 239100
+
+         NNPDF23_nlo_nf5_as_0119         240000 - 240100
+         NNPDF23_nnlo_nf5_as_0119        241000 - 241100
+
+       New CT10nnlo (+revamp of CT10) sets: 
+         CT10nlo  (0,1-52)    11000 - 11052
+         CT10nlo_as_0112      11062
+         CT10nlo_as_0113      11063
+         CT10nlo_as_0114      11064
+         CT10nlo_as_0115      11065
+         CT10nlo_as_0116      11066
+         CT10nlo_as_0117      11067
+         CT10nlo_as_0118      11068
+         CT10nlo_as_0119      11069
+         CT10nlo_as_0120      11070
+         CT10nlo_as_0121      11071
+         CT10nlo_as_0122      11072
+         CT10nlo_as_0123      11073
+         CT10nlo_as_0124      11074
+         CT10nlo_as_0125      11075
+         CT10nlo_as_0126      11076
+         CT10nlo_as_0127      11077
+
+         CT10nlo_nf3   0,1    11080 - 11081
+         CT10nlo_nf4   0,1    11082 - 11083
+              
+         CT10wnlo  (0,1-52)   11100 - 11152
+
+         CT10wnlo_as_0112     11162
+         CT10wnlo_as_0113     11163
+         CT10wnlo_as_0114     11164
+         CT10wnlo_as_0115     11165
+         CT10wnlo_as_0116     11166
+         CT10wnlo_as_0117     11167
+         CT10wnlo_as_0118     11168
+         CT10wnlo_as_0119     11169
+         CT10wnlo_as_0120     11170
+         CT10wnlo_as_0121     11171
+         CT10wnlo_as_0122     11172
+         CT10wnlo_as_0123     11173
+         CT10wnlo_as_0124     11174
+         CT10wnlo_as_0125     11175
+         CT10wnlo_as_0126     11176
+         CT10wnlo_as_0127     11177
+
+         CT10wnlo_nf3   0,1   11180 - 11181
+         CT10wnlo_nf4   0,1   11182 - 11183
+
+         CT10nnlo  (0,1-52)   11200 - 11252
+
+         CT10nnlo_as_0110     11260
+         CT10nnlo_as_0111     11261
+         CT10nnlo_as_0112     11262
+         CT10nnlo_as_0113     11263
+         CT10nnlo_as_0114     11264
+         CT10nnlo_as_0115     11265
+         CT10nnlo_as_0116     11266
+         CT10nnlo_as_0117     11267
+         CT10nnlo_as_0118     11268
+         CT10nnlo_as_0119     11269
+         CT10nnlo_as_0120     11270
+         CT10nnlo_as_0121     11271
+         CT10nnlo_as_0122     11272
+         CT10nnlo_as_0123     11273
+         CT10nnlo_as_0124     11274
+         CT10nnlo_as_0125     11275
+         CT10nnlo_as_0126     11276
+         CT10nnlo_as_0127     11277
+         CT10nnlo_as_0128     11278
+         CT10nnlo_as_0129     11279
+         CT10nnlo_as_0130     11280
+
+
+
+    * Adds code for Uncertainty calculations (courtesy of Graeme Watt) - 
+          see src/uncertainty.f for more details.
+           
+5.8.8b2 - 17-4-12
+    * Fixes bug in previous beta version, causing compilation problems with gcc4.6 
+
+5.8.8b1 - 28-2-12
+	* fix bug in lhaglue.f causing inability to access the abkm etc
+	sets...
+
+5.8.7 - 17.02.2012 - Addendum
+
+    * grid files for (all work with standard 5.8.7
+
+        NNPDF21_nnlo_mc_15_100
+        NNPDF21_nnlo_mc_16_100
+        NNPDF21_nnlo_mc_17_100
+        NNPDF21_nnlo_mb_425_100
+        NNPDF21_nnlo_mb_45_100
+        NNPDF21_nnlo_mb_50_100
+        NNPDF21_nnlo_mb_525_100
+
+     and replaced gird file NNPDF21_FFN3_100  (error in old one)
+
+5.8.7 - 15.02.2012
+
+    * 5.8.7b3 - 17.01.2012
+
+    * adds code files for AMB11 sets
+
+    * 5.8.7b2  - 18.11.2011
+
+	* adds code for NNPDF21_nnlo_nf5_100 and NNPDF22_nlo_100 sets (and
+	grid files)
+
+	* src/wrapmrstqed*.f: Fix calls to the jeppe2 function (patches from Genser)
+
+	* src/commonlha*.inc: Change path and name variable lengths to
+	1024 characters to avoid overflows on e.g. Grid deployments.
+
+	* configure.ac: Adding a check to make sure that no-one tries to
+	install into --prefix=$PWD.
+
+    * Fixes the problem that the u and d, and also the ubar and dbar,
+      partons were interchanged in error for the HKN nuclear PDF sets.
+
+    * 5.8.7b1 identical to 5.8.6
+
+5.8.6 - 02.08.2011
+
+	* All of additions in beta 5.8.6 versions. including
+
+	* HERAPDF 1.5 (NLO and NNLO, eigenvalue sets, alphas sets and variation sets)
+
+	* NNPDF21 lo, lostar and nnlo sets
+
+	* Corrected versions of abkm09 wrappers
+
+	* Various fixes.
+
+	* 5.8.6b5  - 11.07.2011
+
+	* bin/lhapdf-config.in: fix --libdir treatment by defining the variable.
+
+	* 5.8.6b4 - 28.6.2011
+
+	* bin/lhapdf-config.in: fix --libdir treatment by defining the $exec_prefix
+	variable. Bug reported by Hans-Werner Boschmann.
+
+        * add code to handle NNPDF_21 nnlo and lo/lostar sets
+
+        * corrected versions of abkm09 wrappers
+
+	* pyext/setup.py.in: use CXXFLAGS and LDFLAGS variables safely in
+	the Python extension build definition.
+
+	* add -flat_namespace to the Mac OS X linker command, as requested
+	by James Monk.
+
+	* 5.8.6b3 - 05.5.2011
+
+	* add code to handle herapdf1.5
+
+	* bug fix in HERAPDF lite version causing strange values around
+		x=10^06
+
+	* 5.8.6b2 - 14.4.2011
+
+	* corrected error in HKN code which hadd cause the u and d partons to
+	  be interchanged, and also the ubar and dbar partons.
+
+	* Updating Python wrapper generation to be compatible with GCC 4.6.
+
+
+5.8.5 -02/02/2011
+
+	* pdfsets moved to new location (SVN -> downloads) which requires
+	  a new lhapdf-getdata script
+
+	* addition of lots of NNPDF21 sets
+
+	* fixing bug in mstw code which causes NaN outputs in various extreme
+	  kinematic regions (q<M_c)  with Mc= 1.05 and 1.10 GeV
+
+	* fixing AFG photon sets which gave parton distributions (not gluon)
+	  2x too large.
+
+	* fixing bug in several CT09 and cteq66alphas file causing failure in
+	  lite mode
+
+	* fixing bug in lite version of the HKN sets (using the wrong alphas
+       	  code was causing failure)
+
+	* stopping re-initialising sets already current (non-lite only)
+
+	* Use less verbose compilation output. Use 'make V=1' to get a
+	  verbose compile for debugging.
+
+	* Adding better handling of failed data file loading: the error
+	  message should now be helpful!
+
+	* Fixing memory leaks in LHAPDF's use of binreloc dynamic path
+	  lookup functions and inside binreloc itself.
+
+	* Fixing a Python bug in handling of failed PDFsets index file download.
+
+******************************************************************************
+5.8.4 -21/7/2010
+
+        * addition of CT10,CT10as,CT10w and CT10was sets.
+
+        * Addition of MSTW2008 heavy-quark variation sets
+
+	* Fix to Alphas calcualtion in HERAGRID sets
+
+	* Addition of lhaglue numbers for all the sets in the NNPDRF2.0 alphas
+	  variation sets.  Only the average set (0) was allocated a number
+	  previously.
+
+	* Adding EPS09 nuclear correction sets
+	  These corrections are used along with a free proton set, selected
+	  in the usual way,  with the call setlhaparm('EPS09') - also EPS09LO
+	  and EPS09NLO.  In addition there are 15 +/- sets for uncertainties
+	  used by setlhaparm('EPS09NLO,1') etc...
+
+        * Small changes to abkm wrapper code (wrapabkm09.f..) to bring it in
+	  line with the code on the abkm web page.
+
+	* Adding abkm09_4_nlo - 4 flavour set. (40780-40805)
+	* Adding abkm09_4_nnlo - 4 flavour set. (40810-40835)
+
+	* Correcting abkm09 numbering in PDFsets.index
+
+5.8.3 -18/5/2010
+
+        * splitting cteq66a sets into cteq66a0,a1,a2,a3 to fix the problem
+	of different q**2 bin edges. cteq66a gave incorrect pdf values for
+	this reason.
+
+	* adding HERAPDF10 alphas variation sets
+
+	* adding NNPDF20 alphas variation sets
+
+ 	* fix for correct lamdbaqcd values for GJR and JR sets
+
+	* fix for correct alphas values for cteq4 and 5
+
+	* octave/wrapoctave.cc: Fix to avoid falling through switch
+	statements (i.e. add break statements!).
+
+	* bin: Converting PDF set downloading function in lhapdf-getdata to use
+	urllib.urlretrieve, which is more efficient than the urllib2
+	approach for large PDF grid files. Thanks to Dmitri Konstantinov
+	for the suggestion.
+
+
+5.8.2 - 17/3/2010
+
+    * New PDF sets:   NNPDF20_100    (90800-90900)
+                      NNPDF20_1000   (97000-98000)
+
+                      abkm09_3_nlo   (40650-40675)
+                      abkm09_5_nlo   (40750-40775)
+                      abkm09_3_nnlo  (40850-40875)
+                      abkm09_5_nnlo  (40950-40975)
+
+                      CT09MCS        (10770)
+                      CT09MC1        (10771)
+                      CT09MC2        (10772)
+
+                      cteq66alphas   (10595-10599)
+
+    * Addition of USER grid file option (wrapusergrid)
+
+    * Fix bugs 1) using multisets with lite options
+               2) alphas values in gjr non zero sets
+               3) MST2006 idef option in wrapevolve
+
+5.8.1 - 11/12/2009
+
+    * Added Octave interface, by Philip Ilten.
+
+    * Added new sets HERAPDF10_EIG.LHgrid
+                     HERAPDF10_VAR.LHgrid
+
+5.8.0 - 07/10/2009
+
+    * Adding the JR09VFnnloE pdfsets.
+
+    * Adding --enable-sets=LIST option
+
+    * Adding --incdir, --libdir, --cppflags and --ldflags arguments to lhapdf-config.
+
+    * Adding definition of $datarootdir to lhapdf-config. Thanks to Thorsten Ohl for the bugfix.
+
+5.7.1 - 08/07/2009
+
+    * Adding new PDF sets:
+        Nuclear PDFs  HKNlo and HKNnlo (LHgrid)  (19 sets central values  only -  various nuclei)
+        JR09FFnnloE.LHgrid (Dynamic pdfs from JR collab)
+        MSTW2008nlo_asmzrange (+ nnlo) (+68cl and 90cl error sets) alphas variations from MSTW
+        NNPDF11_100 and NNPDF12_100.LHgrid ...  100 and 1000(1.2only) replica sets for v1.1 and 1.2
+
+    * Added has_photon() function in Fortran and LHAPDF::hasPhoton in
+	C++/Python, for detecting if the current set has an extra photon
+	member.
+
+	* Adding checks for the Python.h header, allowing the Python
+	extension build request to fail more gracefully in the configure
+	phase.
+
+	* Adding --list, --force and other improvements to lhapdf-getdata.
+	The PDFsets.index file is no longer used, preferring instead to get
+	an always up-to-date list of PDF files from the SVN directory listing.
+
+	* Committing the pdf-error-plot.py script for visualising PDF
+	error set bands.
+
+	* Committing the pdf-plot.py and pdf-ratio-plot.py example
+	scripts, for plotting LHAPDF PDF sets with the Python matplotlib
+	library.
+
+	* Adding the lhapdf-getdata script, and bug-fixing Python logging
+	initialisation for SL4 systems in lhapdf-query.
+
+	* Removing bundled PDF sets. Now only one tarball is made, and
+	only the PDFsets.index file is installed.
+
+	* Fixing Mac compilation bug with NNPDF sets: replacing
+	intrinsically looped READ statement with an explicit loop and
+	normal READ (thanks to James Monk).
+
+	* Adding DESTDIR to Python module install prefix (thanks to
+	Nikolay Dyankov).
+
+
+5.7.0 - 16/02/2009
+
+        * Added MSTW and MSTW-lite code and grid files
+
+	* Fixed problem with lhaglue numbering of NNPDF sets
+
+	* Added a case-insensitive pattern match argument to the
+	lhapdf-query "listnames" and "listsets" arguments,
+	e.g. "lhapdf-query listsets CTEQ6".
+
+	* Converted "go to" to "goto", since some Fortran compilers don't
+	like the version with a space.
+
+	* Fixed missing inline of operator<< for PDFInfo objects.
+
+	* Replaced binreloc with an upgraded and symbol-independent copy.
+
+
+5.6.0 - 23/10/2008
+
+	* Added LHAPDF::setParameter(parm) function to the C++ interface
+	--- it is just a thin wrapper on the Fortran setlhaparm. (AB)
+
+	* Added LHAPDF/LHAPDFConfig.h header, automatically populated with
+	LHAPDF_VERSION, LHAPDF_LOWMEM and LHAPDF_NMXSET. (AB)
+
+	* Fixed error calculation and x-range in CCTest2, and improved
+	efficiency of low mem mode example initialisation strategy. (AB)
+
+	* Added Example7.f - fortran version of CCTest2.cc to demonstrate
+	the calculation of hessian type errors using MRST2006nnlo.LHgrid (MW)
+
+        * Fixed the set number for cteq6lg in the lhaglue strictm routine.
+	(MW)
+
+        * Added HERAPDF01 sets (MW)
+
+	* Added NNPDF sets (MW)
+
+	* Added GJR sets (MW)
+
+        * Added several new 'lite' versions to reduce v-mem size in
+	--enable-low-memory mode. : incl... mrstqed-lite, a02m-lite,
+	h1-lite etc... (MW)
+
+	* Removed wrapa02.f since this was not used and had been superseded
+	by wrapa02m.f (MW)
+
+	* Added "listsets", "listids", "listnames" and "version" commands
+	to lhapdf-query. (AB)
+
+
+5.5.1 - 26/09/2008
+
+	* Improvements to archive building: svn export should no longer be
+	needed before release since SVN files are automatically removed. (AB)
+
+	* Fixed lhaprint to set silent if a stream other than #6 is used,
+	and to call the common initialisation routine first. (MW)
+
+	* Fixed MRST QED set to use arrays of compatible size with the
+	"jeppe" interpolation routines. Spotted by Peter Richardson. (AB)
+
+	* Removed broken caching of alpha_s computation in MRST
+	sets. Thanks to Simon Plaetzer and Giuseppe Bozzi for alerting us
+	to the problem. (MW)
+
+	* Fixed units of lambda_qcd5 in cteq6ab, cteq65 and cteq66 PDF
+	grid files. This was causing crashes in MC@NLO. Thanks to James
+	Ferrando for spotting and solving the problem. (MW)
+
+	* Added building of lhapdf-*.tar.bz2 tarball (better compression
+	than gzip). (AB)
+
+	* Added "by LHAPDF ID code" initialisation to C++ interface. (AB)
+
+	* Fixing deprecated uses of GOTO to jump to end of a DO loop. (AB)
+
+	* Added regression scripts to dump out randomly sampled PDF
+	values (with logarithmic measures on x and Q) and to then read
+	them back in to check for deviations between DF values between old
+	and new LHAPDF versions. (AB)
+
+	* Provided lhapdf-query script for command-line querying of
+	LHAPDF. (AB)
+
+	* Added C++/Python API functions to read PDF set metadata from
+	PDFsets.index. (AB)
+
+	* Regression of F90 steering modules to use common blocks and an
+	initialising subroutine, which is not completely robust but keeps
+	SLC4 LCG applications happy (they have no F90 compiler). Regressed
+	F90 file extensions from .f90 to .f, since g77 refuses to even
+	attempt to compile .f90 extensions, even if it can handle the
+	contents. (AB)
+
+	* Conversion of all Fortran source files to F90-type
+	free-format. With a .f suffix and -ffree-form flag, g77 will parse
+	these files successfully. (AB)
+
+5.5.0 - 08/08/08
+
+	* Doxygen now attempts to generate a Doxyfile compatible with the
+	version being used, in an attempt to avoid some reported segfaults
+	on old systems. (AB)
+
+	* Fixed several uninitialised variables in Fortran routines. (AB)
+
+	* Provided "lite" versions of the CTEQ and MRST sets, without the
+	43 extra arrays allocated for Hessian sets. Use the
+	--enable-low-memory configure switch to disable the extra 43 sets:
+	this is mainly of interest for batch use on systems where the
+	batch accountancy is militant about vram occupancy: on standalone
+	systems the unused memory pages are never really allocated, so
+	there is no danger in having them allocated. (MW, AB)
+
+	* Added configure flag to control max number of concurrent PDF
+	sets. Affects virtual memory overhead, so if LHAPDF is being used
+	on a system which uses vram-based accountancy, you may need to
+	ensure that this is set as low as possible. By default, it's set
+	to 1. (AB)
+
+	* Compatibility with pgf90, pgf95 and ifort compilers. (AB)
+
+	* Version number in banner now set from autoconf spec. (AB)
+
+	* Various F90 conversions, clean-ups and fixes. Improved
+	portability as a result of e.g. double standardisation. Tab
+	characters removed from F77 files (converted to 8 spaces) since
+	the fixed format makes them dangerous. (AB)
+
+	* Fixed uninitialised steering common blocks (block data doesn't
+	work from libraries) by moving to using F90 "modules"
+	instead and fixing some scoping bugs in the getdirpath function.
+	LHAPDF now requires a F90-compatible compiler. (David Grellscheid, AB)
+
+	* Renamed C++ test programs, added an installcheck target and
+	added Fortran tests #5 and #6 to "make check". (AB)
+
+	* Fixed C string errors in path-finding functions. These functions
+          have been converted to C++ instead, since the C string copying /
+          pointer issues were extremely fragile. The test now also checks for
+          existence of LHAPDF-specific directory contents before returning,
+          for extra safety. (AB)
+
+
+5.4.1 - 10/07/08
+
+	* Fixed bug x/q limit bug in cteq6 when using different members
+          the same set. (MW)
+
+	* Updated obsolete Fortran code which produced annoying compilation
+	  warning messages. (MW)
+
+	* Default member 0 now set automatically before call to InitPDF. (MW)
+
+	* Fixed configure bugs with disabling old ccwrap interface and
+	interaction of ccwrap with pyext. (AB)
+
+	* Added more pedantic compiler warning messages and fixed
+	highlighted errors. (AB)
+
+	* Headers are now installed to the proper "include/LHAPDF"
+	directory, rather than "include/lhapdf" (AB)
+
+	* Added functions to get the install prefix, PDF sets directory
+	and PDF sets index file path, and a corresponding test program for
+	the C++ wrapper. (AB)
+
+	* Added binreloc control to configure. (AB)
+
+	* Rationalised C++ initialising functions (AB)
+
+	* C++ Doxygen improvements (AB)
+
+	* Provided C array versions of the multi-set C++ functions. (AB)
+
+	* Renamed C++ "M" functions to use C++ style function signatures. (AB)
+
+	* Fixed a few issues with C++-Fortran interfacing and headers. (AB)
+
+	* Fixed potential C string length bug in getdatapath_ function. (AB)
+
+	* Changes for GCC 4.3 compliance. (AB & MW)
+
+	* Added Mac OS X build detection. (AB)
+
+	* Removed constituent library linking with $FCFLAGS arguments,
+	since this results in a double declaration of the gfortran dummy
+	main function on some systems. (AB)
+
+	* --disable-doxygen configure flag added. (AB)
+
+5.4.0 - 23/05/08
+
+	* New PDF sets included: (MW)
+
+		cteq66.LHgrid  - cteq 6.6 fit with error sets (1+44)
+		cteq66c.LHgrid - cteq 6.6 intrinsic charm sets (4)
+		cteq66a.LHgrid - cteq 6.6 alternate alphas sets (4)
+
+		MRST2007lomod.LHgrid - PDFs for LO generators (1)
+		MRSTMCal.LHgrid - LO MC fit - alphas KT^2 (1)
+
+	* New Nuclear PDF formula EPS08 available as an alternate to
+	  the older EKS98.
+
+        * Various bug fixes from patches to 5.3.1
+
+	* Improved handling of error reporting through  setlhaparm('SILENT')
+	  and setlhaparm('LOWKEY')
+
+	* LHAPDF C++ headers all located in include directory, properly
+	installed into $prefix/include/LHAPDF, and distributed in the
+	tarball. (AB)
+
+	* Merged main C++ wrapper into libLHAPDF, retaining libLHAPDFWrap
+	for backwards compatibility. (AB)
+
+	* Added libtool library versioning to both the core and C++
+	wrapper libraries. (AB)
+
+	* LHAPDF banner now obeys the SILENT/LOWKEY verbosity control
+	though the LHAPDF/C++ interfaces, as for LHAGLUE. (AB)
+
+	* Added enum for semantic choice between LHgrid and LHpdf
+	interpolation/evolution to the C++ wrapper.
+
+	* Added SWIG-based Python extension and test program. (AB)
+
+	* Using Fortran examples and C++ wrapper test programs as automake
+	unit tests. (AB)
+
+	* Deprecated class-based C++ wrapper and provided replacement
+	version based on global functions in a new "LHAPDF" namespace. The
+	new interface is declared in LHAPDF.h and also provides a greater
+	subset of the Fortran configuration functions and more efficient
+	versions of the xfx functions which bypass the copying in and out
+	of STL vectors. (AB)
+
+	* Added Doxygen build and install for C++ wrapper. (AB)
+
+	* Added enable/disable flags for LHAGLUE and C++ wrapper. (AB)
+
+	* Fixed C++ wrapper to pass hidden string length parameters to
+	Fortran subroutines, use explicit pointers rather than
+	references (which are implementation-sensitive) in Fortran
+	interface, and to use STL strings in its C++ API. (AB)
+
+	* Added make check call to lhapdf-example1, and a make hook to
+	build symlinks so that the PDTsets will be found even if the
+	src/libLHAPDF library is linked, rather than the installed
+	version. (AB)
+
+	* Disabled internal use of system("lhapdf-config --pdfsets ...")
+	call to work out position of the PDF sets. This is now done via
+	the binreloc (http://www.autopackage.org/docs/binreloc/) system,
+	with a fallback value set by a preprocessor define, whose value is
+	the same as that set via lhapdf-config. This makes LHAPDF
+	relocateable, as defined on the binreloc Web page, so it can now
+	be considered for user-space packaging with e.g. autopackage. The
+	binreloc function call must be done in C, so a new getdatapath.c
+	source file has been added. The LHAPATH common block variable and
+	environment variable can still used to override this
+	mechanism. (AB)
+
+	* Using AC_FC_WRAPPERS to deal with Fortran compilers which
+	require a dummy MAIN__ function and to portably use different
+	Fortran symbol manglings (AB);
+
+	* Added the --disable-install-pdfsets switch to configure (default
+	is to install PDF sets: this provides a mechanism to disable
+	it. (AB)
+
+	* Added --enable-debug configure flag, and corrected handling of
+	user-set FFLAGS variable (previously it was always overridden by
+	the default). (AB)
+
+5.3.1 - 16/11/07
+
+        * STRUCTM/STRUCTP now allow constants in calling argument string.
+
+        * New MRST 2001/2204 code for better extrapolation, which also fixes the
+          bug which caused failure of these on extrapolation.
+
+        * Fixes VZERO name conflict with (for example) CERNLIB
+
+        * Corrects error in MRST2006 code causing PDFs to be frozen at Q=1.43 when
+          called with Q between 1.43 and 4.3.
+
+5.3 - 28/06/2007
+
+	* Addition of the following new PDFsets: mrst2004qed mrst2006nnlo
+	cteq65 cteq65c cteq5f3 cteq5f4
+
+	* GetNf() now returns '-1' for the .LHgrid files - it only returns
+	the correct number of flavours if evolution is done in the PHAPDF
+	program -ie .LHpdf files
+
+	* C++ wrapper library (LHAPDFWrap.a and .so) is now built
+	automatically in the make/make install procedure and placed in the
+	standard LHAPDF library directory.
+
+	* New Fortran routines and C++ methods to extract the max and min
+	X and Q**2 values in the raw LHAPDF code.
+
+	* 'extrapolate' the PDFs beyond the max/min x/Q2 now works with
+	the raw LHAPDF code.
+
+	* Addition of wrapUSER.f routine to allow a hook for user written
+	PDF sets to be added.
+
+	* Finding PDF sets with lhapdf-config now writes into
+	$HOME/.lhapdf/, rather than /tmp. This avoids write permission
+	conflicts between users.
+
+	* Added PDFsets.index file
+
+	* Distributions are now built in a more standard way with "make
+	dist" and the dist-hook mechanism
+
+5.2p3 - 6/11/2006
+
+	* Fixed error causing anti-b in zeus2002 to be zero.
+
+	* For consistency the argument lists in a02init,a02minit and
+	grxlim corrected.
+
+5.2p2 - 19/7/2006
+
+	* Fixed error in print statement in Example5.f
+
+	* Removed reference to the H12000lo2 sets in lhaglue.f
+
+	* Added common LUDAT1 to lhaglue.f to allow working with older
+	Pythia versions
+
+	* Fixed problems with 's in decriptions causing errors with
+	gfortran compiler
+
+	* Fixed problem causing QCDNUM (in MRST and ZEUS) to work slowly
+	with V5.
+
+5.2.1 - 21/6/2006
+
+	* Addition of MRST2004 Fieed flavour FF3 and FF4 sets
+
+	* H12000 set back to original grid files (problems with extended
+	fit)
+
+5.2.0 - 13/6/2006
+
+	* Addition of Nuclear PDFs (as in PDFLIB - STRUCTA(),
+	evolvePDFa(), evolvePDFaM())
+
+	* Fix to bug in CTEQ at x=1.0 (now identically zero)
+
+	* $LHAPATH environmental variable now works with LHAPDF raw as
+	well as LHAGLUE
+
+5.1.0 - 26/4/2006
+
+	* Libraries now installed by libtool, including shared
+	libraries (.so).
+
+	* STRUCTM fixed to work for photon PDFs (sets IP2=0,P2=0.0)
+
+	* Changed function names BETA and GAMMA to BETA_LHA and GAMMA_LHA
+	to avoid conflicts.
+
+	* Fixed bug in SMRSPI.LHgrid file
+
+	* Fixed small bugs to work with Intel compiler.
+
+5.0.0 - 1/3/2006
+
+	* Addition of multiset initialisation (LHAPDF and LHAglue)
+
+	* Setting the path to PDF files by function call
+
+	* Setting the path to PDF files using environmental variable
+	$LHAPATH
+
+	* Setting control parameters via function calls.
+
+	* Renaming include files as .inc in src directory
+
+4.2.0 - 14/11/2005
+
+	* Addition of new cteq6AB (variable alphas(mz)) PDF sets.
+
+	* Mods by cteq to other cteq code to improve speed.
+
+	* New a02m_nnlo.LHgrid file (previous one was erroneously the same
+	as LO).
+
+	* Fix to SMRSPI code which was wrongly setting usea to zero.
+
+4.1.1 - 19/9/2005
+
+	* Patch to fix bug affecting cteq6(LHgrid) at x>0.9763
+
+4.1.0:
+	* Converted build system to use GNU autotools
+
+	* Introduced path-independent references to PDF sets via the
+	lhapdf-config script and the InitPDFsetByName subroutine. Note
+	that the script must be in the user execution path and must have
+	been installed by autotools to work properly (AB).
+
+4.0.0:
+	* The addition of PDF sets for photons and pions
+
+	* Additions to lhaglue including STRUCTP for photons and PDFSTA
+	for statistics
+
+	* More PDF sets included.
+
+	* A new simpler directory structure
+
+3.0.0:
+	* The addition of the routines PDFSET and STRUCTM plus a unique
+	PDF numbering scheme (all from the lhaglue package) to enable the
+	LHAPDF to be used in the same way as PDFLIB.
+
+	* More PDF sets included.
+
+2.0.0:
+	* Single compilation of code for ALL PDF sets. (In v1 the user had
+	to recompile the code when using different evolution code
+	packages)
+
+	* Ability to use the original interpolation grid files (.LHgrid)
+	produced by the authors of the PDFs, as well as parameter
+	files (.LHpdf) to define the PDFs with seamless switching between
+	the two types.
+
+	* More PDF sets included.

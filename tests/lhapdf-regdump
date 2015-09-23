@@ -1,0 +1,49 @@
+#! /usr/bin/env python
+
+import os, sys, re, time, random
+from math import log10, sqrt
+from optparse import OptionParser
+
+usage = """Usage: %prog <pdfid> [<pdfid>...]\n
+The LHAPDF regression tester reference file builder script.
+Write out xf(x,Q2) values from the given set to files for
+use as regression testing reference files."""
+
+
+## Parse command line options
+parser = OptionParser(usage=usage)
+parser.add_option("-n", "--num-samples", type=int, dest="NUMSAMPLES", 
+                  default=100, help="how many samples to take from each PDF set")
+parser.add_option("-V", "--verbose", action="store_true", dest="VERBOSE", 
+                  default=False, help="print status messages")
+parser.add_option("-Q", "--quiet", action="store_true", dest="QUIET",
+                  default=False, help="be very quiet (overrides verbose and debug)")
+(opts, args) = parser.parse_args()
+
+import lhapdf
+lhapdf.setVerbosity(lhapdf.SILENT)
+
+random.seed(21344254321)
+
+for arg in args:
+    pdfid = int(arg)
+    filename = "%d.dat" % pdfid
+    try:
+        info = lhapdf.getPDFSetInfo(pdfid)
+        if not opts.QUIET:
+            print "Dumping", opts.NUMSAMPLES, "samples from", info
+        lhapdf.initPDFSet(info.file, info.memberId)
+        x_exprange = (log10(info.lowx), log10(info.highx))
+        Q_exprange = (sqrt(log10(info.lowQ2)), sqrt(log10(info.highQ2)))
+        f = open(filename, "w")
+        for i in range(opts.NUMSAMPLES):
+            x = 10**random.uniform(*x_exprange)
+            Q = 10**random.uniform(*Q_exprange)
+            thisxfx = lhapdf.xfx(x, Q)
+            f.write("%e\t%e" % (x,Q))
+            for v in thisxfx:
+                f.write("\t%e" % v)
+            f.write("\n")
+        f.close()
+    except:
+        pass

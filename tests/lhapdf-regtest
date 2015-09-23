@@ -1,0 +1,49 @@
+#! /usr/bin/env python
+
+import os, sys, re
+from optparse import OptionParser
+
+usage = """Usage: %prog <testfile> [<testfile>...]\n
+The LHAPDF regression tester script.
+Read in (x, Q, xfx, xfa...) tuples from files, and compare to the
+xf(x,Q2) values calculated by the latest version."""
+
+
+## Parse command line options
+parser = OptionParser(usage=usage)
+parser.add_option("--threshold", type=float, dest="THRESHOLD", 
+                  default=0.0001, help="max tolerable deviation between LHAPDF and reference file xfx values")
+parser.add_option("-V", "--verbose", action="store_true", dest="VERBOSE", 
+                  default=False, help="print status messages")
+parser.add_option("-Q", "--quiet", action="store_true", dest="QUIET",
+                  default=False, help="be very quiet (overrides verbose and debug)")
+(opts, args) = parser.parse_args()
+
+import lhapdf
+lhapdf.setVerbosity(lhapdf.SILENT)
+
+for filename in args:
+    pdfid = int(re.sub(r"[\.-].*$", "", filename))
+    info = lhapdf.getPDFSetInfo(pdfid)
+    print "Testing", info
+    lhapdf.initPDFSet(info.file, info.memberId)
+    f = open(filename, "r")
+    for line in f:
+        refvals = line[:-1].split("\t")
+        x = float(refvals[0].strip())
+        Q = float(refvals[1].strip())
+        refxfx = [float(i.strip()) for i in refvals[2:]]
+        thisxfx = lhapdf.xfx(x, Q)
+        for flav, vals in enumerate(zip(thisxfx, refxfx)):
+            if opts.VERBOSE:
+                print x, Q, "->", vals[0], "vs. ref", vals[1]
+
+            if abs(vals[0]) < 1E-5 and abs(vals[1]) < 1E-5:
+                deviation = 0.0
+            else:
+                deviation = 2*(vals[0]-vals[1])/(vals[0]+vals[1])
+
+            if deviation > opts.THRESHOLD:
+                print "Discrepancy of %f%%! %d(x=%f, Q=%f, flav=%d) -> %f vs. ref %f" % \
+                    (100*deviation, pdfid, x, Q, flav, vals[0], vals[1]) 
+    f.close()

@@ -1,0 +1,41 @@
+LHAPDFWrap 
+
+FREE SOFTWARE. USE AT YOUR OWN RISK.
+
+A C++ wrapper for the LHAPDF package.  Works with LHAPDFv2, v3.
+Requires the gnu gcc compiler.
+
+Adapted for LHAPDFv4 by Mike Whalley
+
+INSTALLATION: 
+- Unpack in a directory
+- edit Makefile:
+  LHAPDFDIR = "your path to libLHAPDF.a"
+- edit test.cc and add the path to the member pdfs as distributed eg 
+  ../PDFsets
+- make
+- ./test should give you some sample output for some pdf set
+
+if all this works, you may just use the Makefile and test.cc as
+templates in your own C++ programs.
+
+WARNING!  Currently, the class is working fine if you work with only one
+pdfset at a time.  Using two different sets via two different instances
+of the LHAPDFWrap class is dangerous as they both point to the same
+FORTRAN library in memory.
+
+WHAT YOU HAVE TO DO: You have to reinitialise the pdfset all the time in
+your code whenever you switch pdfsets.  That is cumbersome and may waste
+computing time.
+
+
+Stefan Gieseke (January 2005)
+
+version 0: 	fairly cleaned up version.  Basic documentation.  Seen to
+	     	work with LHAPDFv2, LHAPDFv3
+
+version 0.1: 	Comment concerning two instances added to README
+
+version 0.2:    Adapted by Mike Whalley for LHAPDFv4 
+
+version 0.3:    Adapted by Craig Group/Mike Whalley for LHAPDFv5 

@@ -1,0 +1,153 @@
+#! /usr/bin/env python
+
+import os, sys, cmd, logging
+
+usage = """%prog [--main] [--all] [--repo=URL] [--dest=DEST] [--dryrun]
+      <name|number> [<name|number> ...]
+
+Grab PDF grid and param files from the LHAPDF repository and install
+them into the local LHAPDF data directory.
+
+
+Examples:
+ * Show all available sets:
+     %prog --list
+ * Get all NNPDF PDFs with pattern matching:
+     %prog NNPDF
+ * Get CTEQ6L1, CTEQ66, MRST-S LO* and LO** PDFs with pattern matching:
+     %prog CTEQ6ll CTEQ66 lomod MCal
+ * Get MSTW2008 68% confidence PDF by full name:
+     %prog MSTW2008lo68cl.LHgrid
+ * See how much downloading would be involved in getting all PDF sets!:
+     %prog --all --dryrun
+ * I'm hardcore, give me the whole collection!:
+     %prog --all
+"""
+
+def getPDFSetList(url):
+    logging.debug("Getting PDF file list from '%s'" % url)
+    import urllib2
+    hreq = None
+    try:
+        hreq = urllib2.urlopen(url)
+        pdflistpage = hreq.read()
+        logging.debug(pdflistpage)
+        hreq.close()
+        import re
+        re_anchor = re.compile(r'^\s*<tr>.*<td><a\s+href="([^"]+)">\1.*$')
+        rtn = []
+        for line in pdflistpage.splitlines():
+            m = re_anchor.match(line)
+            if m:
+                rtn.append(m.group(1))
+        return rtn
+    except urllib2.URLError, e:
+        logging.error("Problem downloading PDF file list from '%s'" % url)
+        if hreq:
+            hreq.close()
+
+
+def getPDFSetFile(baseurl, filename, outdir, download=True):
+    url = baseurl + "/" + filename
+    outpath = os.path.join(outdir, filename)
+    if not os.path.exists(outdir):
+        logging.info("Making PDF set directory %s" % outdir)
+        os.makedirs(outdir)
+    logging.info("Getting PDF set from '%s'" % url)
+    if download:
+        try:
+            import urllib
+            urllib.urlretrieve(url, outpath)
+            return True
+        except IOError:
+            logging.error("Problem while writing PDF set to '%s'" % outpath)
+            out.close()
+        except:
+            logging.error("Problem downloading PDF set from '%s'" % url)
+        return False
+    return True
+
+
+## Only use the LHAPDF Python module (if available) to choose the
+## current sets dir into which the downloaded sets should be written
+DEFAULT_PDFSETS_DIR = os.path.abspath(os.curdir)
+try:
+    import lhapdf
+    DEFAULT_PDFSETS_DIR = lhapdf.pdfsetsPath()
+except:
+    pass
+
+
+if __name__ == '__main__':
+    ## Parse command line options
+    from optparse import OptionParser
+    parser = OptionParser(usage=usage)
+    parser.add_option("--repo", help="Base URL of online sets repository (%default)", metavar="URL",
+                      dest="URL", default="http://www.hepforge.org/archive/lhapdf/pdfsets/current")
+    parser.add_option("--dest", help="PDF sets directory to install to (%default)", metavar="DEST",
+                      dest="DEST", default=DEFAULT_PDFSETS_DIR)
+    parser.add_option("--all", help="Get ALL sets (this will be hundreds of megabytes... be careful!)",
+                      dest="ALL", action="store_true", default=False)
+    parser.add_option("--list", help="Just list available files",
+                      dest="LIST", action="store_true", default=False)
+    parser.add_option("--force", help="Overwrite existing files",
+                      dest="FORCE", action="store_true", default=False)
+    parser.add_option("--dryrun", help="Don't actually do any downloading",
+                      dest="DOWNLOAD", action="store_false", default=True)
+    parser.add_option("-q", "--quiet", help="Suppress normal messages", dest="LOGLEVEL",
+                     action="store_const", default=logging.INFO, const=logging.WARNING)
+    parser.add_option("-v", "--verbose", help="Add extra debug messages", dest="LOGLEVEL",
+                      action="store_const", default=logging.INFO, const=logging.DEBUG)
+    opts, args = parser.parse_args()
+
+    ## Configure logging
+    try:
+        logging.basicConfig(level=opts.LOGLEVEL, format="%(message)s")
+    except:
+        logging.getLogger().setLevel(opts.LOGLEVEL)
+        h = logging.StreamHandler()
+        h.setFormatter(logging.Formatter("%(message)s"))
+        logging.getLogger().addHandler(h)
+
+
+    ## Get list of PDF files
+    allpdffiles = getPDFSetList(opts.URL)
+    if allpdffiles is None:
+        logging.error("Could not get PDF file list: exiting")
+        sys.exit(1)
+
+
+    ## Just list the available PDF files
+    if opts.LIST:
+        for f in sorted(allpdffiles):
+            print f
+        sys.exit(0)
+
+    logging.info("Getting sets from %s" % opts.URL)
+    logging.info("Installing sets to %s" % opts.DEST)
+    filenames = []
+    if opts.ALL:
+        filenames = allpdffiles
+    else:
+        import re
+        for pattern in args:
+            patt_re = re.compile(pattern, re.I)
+            for f in allpdffiles:
+                if f in filenames:
+                    continue
+                if patt_re.search(f) or patt_re.match(f):
+                    filenames.append(f)
+
+    ## Actually download the sets
+    if len(filenames) == 0:
+        logging.info("No sets match the arguments given")
+    else:
+        logging.debug("Getting sets " + str(filenames))
+        for f in filenames:
+            setpath = os.path.join(opts.DEST, f)
+            getset = (not os.path.exists(setpath))
+            if not getset and opts.FORCE:
+                logging.info("Forcing overwrite of %s" % setpath)
+                getset = True
+            if getset:
+                getPDFSetFile(opts.URL, f, opts.DEST, download=opts.DOWNLOAD)

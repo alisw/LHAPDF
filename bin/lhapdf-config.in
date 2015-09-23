@@ -1,0 +1,55 @@
+#! /usr/bin/env bash
+
+# These variables need to exist
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+datarootdir=@datarootdir@
+
+if [[ $# -eq 0 || -n $( echo $* | egrep -- "--help|-h" ) ]]; then
+    echo "lhapdf-config: configuration tool for the LHAPDF"
+    echo "               parton density function evolution library"
+    echo "               http://projects.hepforge.org/lhapdf/"
+    echo
+    echo "Usage: lhapdf-config [[--help|-h] | [--prefix] | [--pdfsets-path]]"
+    echo "Options:"
+    echo "  --help | -h    : show this help message"
+    echo "  --prefix       : show the installation prefix (cf. autoconf)"
+    echo "  --incdir       : show the path to the LHAPDF header directory (for C++ interface)"
+    echo "  --libdir       : show the path to the LHAPDF library directory"
+    echo "  --datadir      : show the path to the LHAPDF installed data directory"
+    echo "  --pdfsets-path : show the path to the directory containing the PDF set data files"
+    echo
+    echo "  --cppflags     : get compiler flags for use with the C preprocessor stage of C++ compilation"
+    echo "  --ldflags      : get compiler flags for use with the linker stage of any compilation"
+    echo
+    echo "  --version      : returns Rivet release version number"
+fi
+
+OUT=""
+
+tmp=$( echo "$*" | egrep -- '--\<prefix\>')
+test -n "$tmp" && OUT="$OUT @prefix@"
+
+tmp=$( echo "$*" | egrep -- '--\<incdir\>')
+test -n "$tmp" && OUT="$OUT @includedir@"
+
+tmp=$( echo "$*" | egrep -- '--\<cppflags\>')
+test -n "$tmp" && OUT="$OUT -I@includedir@"
+
+tmp=$( echo "$*" | egrep -- '--\<libdir\>')
+test -n "$tmp" && OUT="$OUT @libdir@"
+
+tmp=$( echo "$*" | egrep -- '--\<ldflags\>')
+test -n "$tmp" && OUT="$OUT -L@libdir@ -lLHAPDF"
+
+tmp=$( echo "$*" | egrep -- '--\<datadir\>|--\<datarootdir\>')
+test -n "$tmp" && OUT="$OUT @datadir@/@PACKAGE_TARNAME@"
+
+tmp=$( echo "$*" | egrep -- '--\<pdfsets-path\>')
+test -n "$tmp" && OUT="$OUT @datadir@/@PACKAGE_TARNAME@/PDFsets"
+
+## Version
+tmp=$( echo "$*" | egrep -- '--\<version\>')
+test -n "$tmp" && OUT="$OUT @PACKAGE_VERSION@"
+
+echo $OUT
