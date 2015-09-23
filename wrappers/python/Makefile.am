@@ -39,8 +39,8 @@ uninstall-local:
 	rm -f  $(DESTDIR)$(PYTHON_PATH)/LHAPDF-$(VERSION)-py$(PYTHON_VERSION).egg-info
 
 clean-local: fix-out-of-source
-	@rm -f $(builddir)/*.pyc
-	@rm -rf $(builddir)/build
+	@rm -f ./*.pyc
+	@rm -rf ./build
 	@rm -rf dist
 	if [ -e $< ]; then if [ -n "$$(cat $<)" ]; then rm -f $$(cat $<); fi; fi
 	rm -f $<
