@@ -280,7 +280,7 @@ def download_url(source, dest_dir, dryrun=False):
             file_size = int(u.info().get('Content-Length')[0])
         except urllib.URLError:
             e = sys.exc_info()[1]
-            logging.error('Unable to download %s' % url)
+            logging.error('Unable to download %s: %s' % (url, str(e)))
             return False
 
         logging.debug('Downloading from %s' % url)
