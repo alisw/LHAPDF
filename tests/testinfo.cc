@@ -11,7 +11,7 @@ using namespace std;
 int main() {
 
   LHAPDF::Info& cfg = LHAPDF::getConfig();
-  cout << "UndefFlavorAction: " << cfg.get_entry("UndefFlavorAction") << endl;
+  // cout << "UndefFlavorAction: " << cfg.get_entry("UndefFlavorAction") << endl;
   cout << "Verbosity: " << cfg.get_entry("Verbosity") << endl;
   cfg.set_entry("Verbosity", 5);
   const LHAPDF::Info& cfg2 = LHAPDF::getConfig();

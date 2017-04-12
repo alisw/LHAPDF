@@ -8,6 +8,12 @@ endif
 if WITH_DOXYGEN
 doxy:
 	@echo "Running Doxygen..."
+	ln -sf $(top_srcdir)/TODO TODO.dox
+	ln -sf $(top_srcdir)/DESIGN DESIGN.dox
+	ln -sf $(top_srcdir)/CODINGSTYLE CODINGSTYLE.dox
+	ln -sf $(top_srcdir)/CONFIGFLAGS CONFIGFLAGS.dox
+	ln -sf $(top_srcdir)/INSTALL INSTALL.dox
+	ln -sf $(top_srcdir)/migration/README MIGRATION.dox
 	@$(DOXYGEN) || true
 install-doxy:
 	$(install_sh_DATA) html/* $(DESTDIR)$(pkgdatadir)/doc/html

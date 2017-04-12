@@ -11,10 +11,10 @@
 #include <string>
 
 /* "LHAPDF version string" */
-#define LHAPDF_VERSION "6.1.5"
+#define LHAPDF_VERSION "6.1.6"
 
 /* "LHAPDF version as an int" */
-#define LHAPDF_VERSION_CODE 60105
+#define LHAPDF_VERSION_CODE 60106
 
 /* "Whether PDFLIB Fortran compatibility is available" */
 #define LHAPDF_PDFLIB 1

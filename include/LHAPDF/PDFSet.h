@@ -21,14 +21,17 @@ namespace LHAPDF {
 
 
   /// Structure for storage of uncertainty info calculated over a PDF error set
-  /// @todo Exact role of scale and default value?
   struct PDFUncertainty {
     /// Constructor
-    PDFUncertainty(double cent=0, double eplus=0, double eminus=0, double esymm=0, double scalefactor=1)
-      : central(cent), errplus(eplus), errminus(eminus), errsymm(esymm), scale(scalefactor)
+    PDFUncertainty(double cent=0, double eplus=0, double eminus=0, double esymm=0, double scalefactor=1,
+		   double eplus_pdf=0, double eminus_pdf=0, double esymm_pdf=0, double e_par=0)
+      : central(cent), errplus(eplus), errminus(eminus), errsymm(esymm), scale(scalefactor),
+	errplus_pdf(eplus_pdf), errminus_pdf(eminus_pdf), errsymm_pdf(esymm_pdf), err_par(e_par)
     {    }
     /// Variables for the central value, +ve, -ve & symmetrised errors, and a CL scalefactor
     double central, errplus, errminus, errsymm, scale;
+    /// Add extra variables for separate PDF and parameter variation errors with combined sets
+    double errplus_pdf, errminus_pdf, errsymm_pdf, err_par;
   };
 
 
@@ -75,7 +78,7 @@ namespace LHAPDF {
       return get_entry_as<int>("DataVersion", -1);
     }
 
-    /// Get the type of PDF errors in this set (replica, symmhessian, hessian, none)
+    /// Get the type of PDF errors in this set (replicas, symmhessian, hessian, custom, etc.)
     std::string errorType() const {
       return to_lower_copy(get_entry("ErrorType", "UNKNOWN"));
     }
@@ -224,6 +227,9 @@ namespace LHAPDF {
     /// @c alternative equal to true (default: false) will construct a confidence
     /// interval from the probability distribution of replicas, with the central
     /// value given by the median.
+    ///
+    /// For a combined set, a breakdown of the separate PDF and parameter variation uncertainties is available.
+    /// The parameter variation uncertainties are computed from the last 2*n members of the set, with n the number of parameters.
     PDFUncertainty uncertainty(const std::vector<double>& values, double cl=100*boost::math::erf(1/sqrt(2)), bool alternative=false) const;
 
     /// Calculate PDF uncertainties (as above), with efficient no-copy return to the @c rtn argument.
@@ -235,6 +241,8 @@ namespace LHAPDF {
     ///
     /// The correlation can vary between -1 and +1 where values close to {-1,0,+1} mean that the two
     /// quantities A and B are {anticorrelated,uncorrelated,correlated}, respectively.
+    ///
+    /// For a combined set, the parameter variations are not included in the calculation of the correlation.
     double correlation(const std::vector<double>& valuesA, const std::vector<double>& valuesB) const;
 
     /// @brief Generate a random value from Hessian @c values and Gaussian random numbers.
@@ -247,7 +255,7 @@ namespace LHAPDF {
     /// Pass a vector @c randoms containing neigen random numbers, where neigen is the number of distinct eigenvectors.
     ///
     /// Option @c symmetrise equal to true will symmetrise the random values (in the case of an asymmetric Hessian set)
-    /// using Eq. (6.5) of arXiv:1205.4024v2, so that the average tends to the best-fit for a large number of replicas.
+    /// using a corrected Eq. (6.5) of arXiv:1205.4024v2, so that the average tends to the best-fit for a large number of replicas.
     ///
     /// Option @c symmetrise equal to false will use Eq. (6.4) of arXiv:1205.4024v2 (for an asymmetric Hessian set),
     /// then the average differs from the best-fit.  Option @c symmetrise has no effect for a symmetric Hessian set.
@@ -257,7 +265,16 @@ namespace LHAPDF {
     /// See, for example, supplementary material at http://mstwpdf.hepforge.org/random/.
     ///
     /// Use of this routine with a non-Hessian PDF set will throw a UserError.
+    ///
+    /// For a combined set, the parameter variations are not included in the generation of the random value.
     double randomValueFromHessian(const std::vector<double>& values, const std::vector<double>& randoms, bool symmetrise=true) const;
+
+
+    /// Check that the PdfType of each member matches the ErrorType of the set.
+    /// @todo We need to make the signature clearer -- what is the arg? Why not
+    ///   automatically check the members? Why not a plural name? Why not on PDF?
+    ///   "Hiding" the name for now with the leading underscore.
+    void _checkPdfType(const std::vector<string>& pdftypes) const;
 
     //@}
 

@@ -11,14 +11,14 @@ namespace LHAPDF {
 
   namespace { // Unnamed namespace
 
-    // One-dimensional linear interpolation for y(x)
+    /// One-dimensional linear interpolation for y(x)
     inline double _interpolateLinear(double x, double xl, double xh, double yl, double yh)	{
       assert(x >= xl);
       assert(xh >= x);
       return yl + (x - xl) / (xh - xl) * (yh - yl);
     }
 
-    // One-dimensional cubic interpolation
+    /// One-dimensional cubic interpolation
     inline double _interpolateCubic(double T, double VL, double VDL, double VH, double VDH) {
       // Pre-calculate powers of T
       const double t2 = T*T;
@@ -36,9 +36,10 @@ namespace LHAPDF {
     }
 
 
-    // Calculate adjacent d(xf)/dx at all grid locations for fixed iq2
+    /// Calculate adjacent d(xf)/dx at all grid locations for fixed iq2
     double _dxf_dlogx(const KnotArray1F& subgrid, size_t ix, size_t iq2) {
       const size_t nxknots = subgrid.xs().size();
+      /// @todo Store pre-cached dlogxs, dlogq2s on subgrids, to replace these denominators? Any real speed gain for the extra memory?
       if (ix != 0 && ix != nxknots-1) { //< If central, use the central difference
         /// @note We evaluate the most likely condition first to help compiler branch prediction
         const double lddx = (subgrid.xf(ix, iq2) - subgrid.xf(ix-1, iq2)) / (subgrid.logxs()[ix] - subgrid.logxs()[ix-1]);
@@ -90,12 +91,15 @@ namespace LHAPDF {
     // else proceed with cubic interpolation:
 
     // Pre-calculate parameters
+    /// @todo Cache these between calls, re-using if x == x_prev and Q2 == Q2_prev
     const double dlogx_1 = subgrid.logxs()[ix+1] - subgrid.logxs()[ix];
     const double tlogx = (logx - subgrid.logxs()[ix]) / dlogx_1;
     const double dlogq_0 = (iq2 != 0) ? subgrid.logq2s()[iq2] - subgrid.logq2s()[iq2-1] : -1; //< Don't evaluate (or use) if iq2-1 < 0
     const double dlogq_1 = subgrid.logq2s()[iq2+1] - subgrid.logq2s()[iq2];
     const double dlogq_2 = (iq2+1 != iq2max) ? subgrid.logq2s()[iq2+2] - subgrid.logq2s()[iq2+1] : -1; //< Don't evaluate (or use) if iq2+2 > iq2max
     const double tlogq = (logq2 - subgrid.logq2s()[iq2]) / dlogq_1;
+
+    /// @todo Statically pre-compute the whole nx * nq gradiant array? I.e. _dxf_dlogx for all points in all subgrids. Memory ~doubling :-/ Could cache them as they are used...
 
     // Points in Q2
     double vl = _interpolateCubic(tlogx, subgrid.xf(ix, iq2), _dxf_dlogx(subgrid, ix, iq2) * dlogx_1,

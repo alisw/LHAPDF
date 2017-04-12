@@ -1,5 +1,5 @@
 noinst_PROGRAMS = testpdf testpdfset analyticpdf compatibility testpdfunc hessian2replicas reweight
-EXTRA_DIST = pythonexample.py testpdfunc.py
+EXTRA_DIST = pythonexample.py testpdfunc.py fexample1.f
 
 AM_CPPFLAGS += -I$(top_srcdir)/include -I$(prefix)/include $(BOOST_CPPFLAGS)
 AM_LDFLAGS += -L$(top_builddir)/src -L$(prefix)/lib

@@ -89,6 +89,16 @@ namespace LHAPDF {
     /// Used in the ODE solver.
     void setAlphaSMZ(double alphas) { _alphas_mz = alphas; }
 
+    /// @brief Set the Z mass used in this alpha_s
+    ///
+    /// Used in the ODE solver.
+    void setMassReference(double mref) { _mreference = mref; _customref = true; }
+
+    /// @brief Set the alpha_s(MZ) used in this alpha_s
+    ///
+    /// Used in the ODE solver.
+    void setAlphaSReference(double alphas) { _alphas_reference = alphas; _customref = true; }
+
     /// @brief Set the @a {i}th Lambda constant for @a i active flavors
     ///
     /// Used in the analytic solver.
@@ -136,6 +146,15 @@ namespace LHAPDF {
 
     /// Value of alpha_s(MZ)
     double _alphas_mz;
+
+    /// Reference mass in GeV
+    double _mreference;
+
+    /// Value of alpha_s(reference mass)
+    double _alphas_reference;
+
+    /// Decides whether to use custom reference values or fall back on MZ/AlphaS_MZ
+    bool _customref;
 
     /// Masses of quarks in GeV
     /// Used for working out flavor thresholds and the number of quarks that are
@@ -265,6 +284,12 @@ namespace LHAPDF {
     /// Set alpha_s(MZ), and also the caching flag
     void setAlphaSMZ( double alphas ) { _alphas_mz = alphas; _calculated = false; }
 
+    /// Set reference mass, and also the caching flag
+    void setMassReference( double mref ) { _mreference = mref; _calculated = false; _customref = true; }
+
+    /// Set alpha_s(MZ), and also the caching flag
+    void setAlphaSReference( double alphas ) { _alphas_reference = alphas; _calculated = false; _customref = true; }
+
     /// Set the array of Q values for interpolation, and also the caching flag
     void setQValues(const std::vector<double>& qs) {
       std::vector<double> q2s;
@@ -284,7 +309,7 @@ namespace LHAPDF {
 
     /// Calculate the decoupling relation when going from num. flav. = ni -> nf
     /// abs(ni - nf) must be = 1
-    double _decouple(double y, unsigned int ni, unsigned int nf) const;
+    double _decouple(double y, double t, unsigned int ni, unsigned int nf) const;
 
     /// Calculate the next step using RK4 with adaptive step size
     void _rk4(double& t, double& y, double h, const double allowed_change, const vector<double>& bs) const;

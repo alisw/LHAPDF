@@ -46,12 +46,6 @@ int main(int argc, char* argv[]) {
   //convertHessianToReplicas(set, randsetname, seed, nrep, randdir, symmetrise);
 
   // Code below provides a simple test comparing the Hessian and replica sets.
-  // Note that there should be good agreement (< 1%) between the central values
-  // and uncertainties for sufficiently large nrep and for "symmetrise = true".
-  // However, the correlations seem to differ, even for very large nrep values,
-  // for quantities that are not strongly correlated, such as the gluon and
-  // up-quark distributions at x = 0.1, chosen in the test below.  This issue
-  // deserves a more complete investigation.
 
   //const bool testrandset = false; // uncomment to skip test below
   const bool testrandset = true; // uncomment to activate test below
@@ -182,7 +176,7 @@ void convertHessianToReplicas(const LHAPDF::PDFSet& set, const string& randsetna
     if (LHAPDF::contains(line, "SetDesc")) {
       outfile << "SetDesc: \"Based on original " << set.name() << ".  This set has " << nrep+1 << " member PDFs.  mem=0 => average over " << nrep << " random PDFs; mem=1-" << nrep << " => " << nrep << " random PDFs generated using ";
       if (symmetrise) {
-        outfile << "Eq. (6.5) of arXiv:1205.4024v2\"" << endl;
+        outfile << "corrected Eq. (6.5) of arXiv:1205.4024v2\"" << endl;
       } else {
         outfile << "Eq. (6.4) of arXiv:1205.4024v2\"" << endl;
       }

@@ -422,10 +422,7 @@ namespace LHAPDF {
     /// @brief PDF member global LHAPDF ID number
     ///
     /// Obtained from the member ID and the set's LHAPDF ID index
-    int lhapdfID() const {
-      /// @todo Use set().lhapdfID() + memberID()
-      return lookupLHAPDFID(_setname(), memberID());
-    }
+    int lhapdfID() const;
 
     /// Description of this PDF member
     std::string description() const {
@@ -460,7 +457,7 @@ namespace LHAPDF {
     /// classes.
     ///
     /// @todo Make virtual for AnalyticPDF? Or allow manual setting of the Info?
-    const std::vector<int>& flavors() const {
+    virtual const std::vector<int>& flavors() const {
       if (_flavors.empty()) {
         _flavors = info().get_entry_as< vector<int> >("Flavors");
         sort(_flavors.begin(), _flavors.end());
@@ -485,6 +482,17 @@ namespace LHAPDF {
     }
     /// @deprecated Use orderQCD instead
     int qcdOrder() const { return orderQCD(); }
+
+    /// @brief Get a quark mass in GeV by PDG code (|PID| = 1-6 only)
+    ///
+    /// Convenience interface to the Mass* info keywords.
+    /// Returns -1 for an undefined PID.
+    double quarkMass(int id) const;
+
+    /// @brief Get a flavor scale threshold in GeV by PDG code (|PID| = 1-6 only)
+    /// Convenience interface to the Mass* and Threshold* info keywords.
+    /// Returns -1 for an undefined PID.
+    double quarkThreshold(int id) const;
 
     //@}
 

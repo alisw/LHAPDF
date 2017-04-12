@@ -7,7 +7,7 @@ datarootdir=${prefix}/share
 Name: lhapdf
 Description: LHAPDF parton density library
 URL: https://lhapdf.hepforge.org
-Version: 6.1.5
+Version: 6.1.6
 Libs: -L${exec_prefix}/lib -lLHAPDF
 Cflags: -I${prefix}/include
 #-I

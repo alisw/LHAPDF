@@ -36,7 +36,9 @@ cdef extern from "../../include/LHAPDF/PDF.h" namespace "LHAPDF":
         int lhapdfID() except +
         string description() except +
         string type() except +
-        int qcdOrder() except +
+        int orderQCD() except +
+        double quarkMass(int) except +
+        double quarkThreshold(int) except +
         void _print "print" () except + # TODO: add the second (verbosity) argument
         PDFSet& set() # TODO: add exception when bug in ref rtn fns is gone
         PDFInfo& info() # TODO: add exception when bug in ref rtn fns is gone
@@ -72,6 +74,7 @@ cdef extern from "../../include/LHAPDF/PDFSet.h" namespace "LHAPDF":
         #void uncertainty(PDFUncertainty&, vector[double]&, double, bool) except +
         double correlation(vector[double]&, vector[double]&) except +
         double randomValueFromHessian(vector[double]&, vector[double]&, bool) except +
+        void _checkPdfType(vector[string]&) except +
 
 cdef extern from "../../include/LHAPDF/AlphaS.h" namespace "LHAPDF":
     cdef cppclass AlphaS:
@@ -101,6 +104,10 @@ cdef extern from "../../include/LHAPDF/PDFSet.h" namespace "LHAPDF":
         double errminus
         double errsymm
         double scale
+        double errplus_pdf
+        double errminus_pdf
+        double errsymm_pdf
+        double err_par
 
 cdef extern from "../../include/LHAPDF/PDFInfo.h" namespace "LHAPDF":
     cdef cppclass PDFInfo(Info.Info):

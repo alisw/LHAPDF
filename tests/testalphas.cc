@@ -55,6 +55,8 @@ int main() {
 
   as_ode.setMZ(91);
   as_ode.setAlphaSMZ(0.118);
+//  as_ode.setMassReference(4.1);
+//  as_ode.setAlphaSReference(0.21);
   as_ode.setQuarkMass(1, 0.0017);
   as_ode.setQuarkMass(2, 0.0041);
   as_ode.setQuarkMass(3, 0.1);
@@ -72,7 +74,7 @@ int main() {
   //  as_ode.setQuarkThreshold(1, 0.08);
 
   // Uncomment to use fixed flavor scheme for ODE solver
-  // as_ode.setFlavorScheme(AlphaS::VARIABLE, 4);
+  // as_ode.setFlavorScheme(AlphaS::FIXED, 4);
 
 
 
@@ -83,14 +85,14 @@ int main() {
   as_ipol.setAlphaSValues(alphas);
 
   // Can interpolate ODE with given knots in Q
-  // as_ode.setQValues(qs);
+//   as_ode.setQValues(qs);
 
 
   ///////////////////////////////
   // Test these solvers and the CT10nlo PDF's default behaviours:
 
 
-  PDF* pdf = mkPDF("CT10nlo", 0);
+  PDF* pdf = mkPDF("CT10", 0);
   const double inf = numeric_limits<double>::infinity();
   ofstream fa("alphas_ana.dat"), fo("alphas_ode.dat"), fi("alphas_ipol.dat"), fc("alphas_ct10nlo.dat");
   cout << endl;

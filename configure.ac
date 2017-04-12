@@ -1,7 +1,7 @@
 ## Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([LHAPDF],[6.1.5],[lhapdf@projects.hepforge.org],[LHAPDF])
+AC_INIT([LHAPDF],[6.1.6],[lhapdf@projects.hepforge.org],[LHAPDF])
 if test "$prefix" = "$PWD"; then
   AC_MSG_ERROR([Installation into the build directory is not supported: use a different --prefix argument])
 fi
@@ -39,7 +39,10 @@ AC_LANG(C++)
 AC_CONFIG_SRCDIR([src/GridPDF.cc])
 AC_CONFIG_HEADERS([config/config.h include/LHAPDF/Version.h])
 
-## Checks for programs
+## Set default C++ optimisation level to -O3 and drop the -g debug flag
+if test -z $CXXFLAGS; then
+    CXXFLAGS='-O3'
+fi
 AC_PROG_CXX
 
 ## This block can go once we decide to have C++11 always on
@@ -63,17 +66,6 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_LIBTOOL
 
-
-dnl autotools default is -g -O2 : --enable-debug doesn't work (anymore)
-dnl ## Enable debugging symbols and assert checking
-dnl AC_ARG_ENABLE([debug],
-dnl   [AC_HELP_STRING(--enable-debug, [build with debugging symbols (default=no)])],
-dnl   [enable_debug=yes], [enable_debug=no])
-dnl if test x$enable_debug == xyes; then
-dnl   AM_CXXFLAGS="$AM_CXXFLAGS -g"
-dnl #else
-dnl #  AM_CPPFLAGS="$AM_CPPFLAGS -DNDEBUG"
-dnl fi
 
 ## Enable LHAGLUE compatibility fns for Fortran and the old C++ interface
 AC_ARG_ENABLE([lhaglue],
@@ -117,14 +109,14 @@ AC_ARG_ENABLE([python],
 if test x$enable_python == xyes; then
   AC_PATH_PROG(PYTHON, python)
   if test x$PYTHON != x; then
-    PYTHON_VERSION=`$PYTHON -c "import sys; print '.'.join(map(str, sys.version_info@<:@:2@:>@));"`
+    PYTHON_VERSION=`$PYTHON -c "import sys; print('.'.join(map(str, sys.version_info@<:@:2@:>@)))"`
     AC_SUBST(PYTHON_VERSION)
-    PYTHON_PATH=`$PYTHON -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(prefix='$prefix', plat_specific=True);"`
+    PYTHON_PATH=`$PYTHON -c "import distutils.sysconfig; print(distutils.sysconfig.get_python_lib(prefix='$prefix', plat_specific=True))"`
     AC_SUBST(PYTHON_PATH)
   fi
-  AM_CHECK_CYTHON([0.18], [:], [:])
+  AM_CHECK_CYTHON([0.19], [:], [:])
   if test x$CYTHON_FOUND = xyes; then
-    AC_MSG_NOTICE([Cython >= 0.18 found: Python extension source can be rebuilt (for developers)])
+    AC_MSG_NOTICE([Cython >= 0.19 found: Python extension source can be rebuilt (for developers)])
   fi
 fi
 AM_CONDITIONAL(WITH_PYTHON, [test x$PYTHON != x])

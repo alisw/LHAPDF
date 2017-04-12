@@ -133,6 +133,18 @@ namespace { //< Unnamed namespace to restrict visibility to this file
   /// The currently active set
   int CURRENTSET = 0;
 
+
+  /// Useful C-string -> Fortran-string converter
+  // Credit: https://stackoverflow.com/questions/10163485/passing-char-arrays-from-c-to-fortran
+  void cstr_to_fstr(const char* cstring, char* fstring, std::size_t fstring_len) {
+    std::size_t inlen = std::strlen(cstring);
+    std::size_t cpylen = std::min(inlen, fstring_len);
+    // TODO: truncation error or warning
+    //if (inlen > fstring_len) FOOOOO();
+    std::copy(cstring, cstring+cpylen, fstring);
+    std::fill(fstring+cpylen, fstring+fstring_len, ' ');
+  }
+
 }
 
 
@@ -151,9 +163,10 @@ extern "C" {
 
   // NEW FORTRAN INTERFACE FUNCTIONS
 
-  /// List of available sets
+  /// LHAPDF library version
   void lhapdf_getversion_(char* s, size_t len) {
-    strncpy(s, LHAPDF_VERSION, len);
+    // strncpy(s, LHAPDF_VERSION, len);
+    cstr_to_fstr(LHAPDF_VERSION, s, len);
   }
 
   /// List of available PDF sets, returned as a space-separated string
@@ -163,7 +176,8 @@ extern "C" {
       if (!liststr.empty()) liststr += " ";
       liststr += setname;
     }
-    strncpy(s, liststr.c_str(), len);
+    // strncpy(s, liststr.c_str(), len);
+    cstr_to_fstr(liststr.c_str(), s, len);
   }
 
 
@@ -176,8 +190,8 @@ extern "C" {
 
   /// LHAPDF library version
   void getlhapdfversion_(char* s, size_t len) {
-    /// @todo Works? Need to check Fortran string return, string macro treatment, etc.
-    strncpy(s, LHAPDF_VERSION, len);
+    // strncpy(s, LHAPDF_VERSION, len);
+    cstr_to_fstr(LHAPDF_VERSION, s, len);
   }
 
 
@@ -188,6 +202,11 @@ extern "C" {
   /// Set LHAPDF parameters -- does nothing in LHAPDF6!
   void setlhaparm_(const char* par, int parlength) {
     /// @todo Can any Fortran LHAPDF params be usefully mapped?
+  }
+  /// Get LHAPDF parameters -- does nothing in LHAPDF6!
+  void getlhaparm_(int dummy, char* par, int parlength) {
+    /// @todo Can any Fortran LHAPDF params be usefully mapped?
+    cstr_to_fstr("", par, parlength);
   }
 
 
@@ -214,7 +233,8 @@ extern "C" {
       if (!pathstr.empty()) pathstr += ":";
       pathstr += path;
     }
-    strncpy(s, pathstr.c_str(), len);
+    // strncpy(s, pathstr.c_str(), len);
+    cstr_to_fstr(pathstr.c_str(), s, len);
   }
 
 
@@ -239,7 +259,7 @@ extern "C" {
     if (boost::algorithm::to_lower_copy(path) == "cteq6ll") path = "cteq6l1";
     // Create the PDF set with index nset
     // if (ACTIVESETS.find(nset) == ACTIVESETS.end())
-    ACTIVESETS[nset] = PDFSetHandler(path); //< @todo Will be wrong if a structured path is given
+    ACTIVESETS[nset] = PDFSetHandler(path); ///< @todo Will be wrong if a structured path is given
     CURRENTSET = nset;
   }
   /// Load a PDF set (non-multiset version)
@@ -602,6 +622,35 @@ extern "C" {
 
 
 
+  void getlam4m_(const int& nset, const int& nmem, double& qcdl4) {
+    if (ACTIVESETS.find(nset) == ACTIVESETS.end())
+      throw LHAPDF::UserError("Trying to use LHAGLUE set #" + LHAPDF::to_str(nset) + " but it is not initialised");
+    CURRENTSET = nset;
+    ACTIVESETS[nset].loadMember(nmem);
+    qcdl4 = ACTIVESETS[nset].activemember()->info().get_entry_as<double>("AlphaS_Lambda4", -1.0);
+  }
+  void getlam4_(const int& nmem, double& qcdl4) {
+    int nset1 = 1;
+    getlam4m_(nset1, nmem, qcdl4);
+  }
+
+
+  void getlam5m_(const int& nset, const int& nmem, double& qcdl5) {
+    if (ACTIVESETS.find(nset) == ACTIVESETS.end())
+      throw LHAPDF::UserError("Trying to use LHAGLUE set #" + LHAPDF::to_str(nset) + " but it is not initialised");
+    CURRENTSET = nset;
+    ACTIVESETS[nset].loadMember(nmem);
+    qcdl5 = ACTIVESETS[nset].activemember()->info().get_entry_as<double>("AlphaS_Lambda5", -1.0);
+  }
+  void getlam5_(const int& nmem, double& qcdl5) {
+    int nset1 = 1;
+    getlam5m_(nset1, nmem, qcdl5);
+  }
+
+
+
+
+
   /// Backwards compatibility functions for LHAPDF5 calculations of
   /// PDF uncertainties and PDF correlations (G. Watt, March 2014).
 
@@ -610,10 +659,10 @@ extern "C" {
     if (ACTIVESETS.find(nset) == ACTIVESETS.end())
       throw LHAPDF::UserError("Trying to use LHAGLUE set #" + LHAPDF::to_str(nset) + " but it is not initialised");
     const string errorType = ACTIVESETS[nset].activemember()->set().errorType();
-    if (errorType == "replicas") { // Monte Carlo PDF sets
+    if (LHAPDF::startswith(errorType, "replicas")) { // Monte Carlo PDF sets
       lmontecarlo = 1;
       lsymmetric = 1;
-    } else if (errorType == "symmhessian") { // symmetric eigenvector PDF sets
+    } else if (LHAPDF::startswith(errorType, "symmhessian")) { // symmetric eigenvector PDF sets
       lmontecarlo = 0;
       lsymmetric = 1;
     } else { // default: assume asymmetric Hessian eigenvector PDF sets
@@ -638,6 +687,7 @@ extern "C" {
     const vector<double> vecvalues(values, values + nmem + 1);
     LHAPDF::PDFUncertainty err = ACTIVESETS[nset].activemember()->set().uncertainty(vecvalues, -1);
     central = err.central;
+    // For a combined set, the PDF and parameter variation uncertainties will be added in quadrature.
     errplus = err.errplus;
     errminus = err.errminus;
     errsymm = err.errsymm;
@@ -672,7 +722,7 @@ extern "C" {
   ///////////////////////////////////////
 
 
-  /// REALLY OLD PDFLIB COMPATILITY FUNCTIONS
+  /// REALLY OLD PDFLIB COMPATIBILITY FUNCTIONS
 
   /// PDFLIB initialisation function
   void pdfset_(const char* par, const double* value, int parlength) {
@@ -979,11 +1029,14 @@ double LHAPDF::getLam4(int nmem) {
 }
 
 double LHAPDF::getLam4(int nset, int nmem) {
-  if (ACTIVESETS.find(nset) == ACTIVESETS.end())
-    throw LHAPDF::UserError("Trying to use LHAGLUE set #" + LHAPDF::to_str(nset) + " but it is not initialised");
-  CURRENTSET = nset;
-  ACTIVESETS[nset].loadMember(nmem);
-  return ACTIVESETS[nset].activemember()->info().get_entry_as<double>("AlphaS_Lambda4", -1.0);
+  // if (ACTIVESETS.find(nset) == ACTIVESETS.end())
+  //   throw LHAPDF::UserError("Trying to use LHAGLUE set #" + LHAPDF::to_str(nset) + " but it is not initialised");
+  // CURRENTSET = nset;
+  // ACTIVESETS[nset].loadMember(nmem);
+  // return ACTIVESETS[nset].activemember()->info().get_entry_as<double>("AlphaS_Lambda4", -1.0);
+  double qcdl4;
+  getlam4m_(nset, nmem, qcdl4);
+  return qcdl4;
 }
 
 
@@ -992,11 +1045,14 @@ double LHAPDF::getLam5(int nmem) {
 }
 
 double LHAPDF::getLam5(int nset, int nmem) {
-  if (ACTIVESETS.find(nset) == ACTIVESETS.end())
-    throw LHAPDF::UserError("Trying to use LHAGLUE set #" + LHAPDF::to_str(nset) + " but it is not initialised");
-  CURRENTSET = nset;
-  ACTIVESETS[nset].loadMember(nmem);
-  return ACTIVESETS[nset].activemember()->info().get_entry_as<double>("AlphaS_Lambda5", -1.0);
+  // if (ACTIVESETS.find(nset) == ACTIVESETS.end())
+  //   throw LHAPDF::UserError("Trying to use LHAGLUE set #" + LHAPDF::to_str(nset) + " but it is not initialised");
+  // CURRENTSET = nset;
+  // ACTIVESETS[nset].loadMember(nmem);
+  // return ACTIVESETS[nset].activemember()->info().get_entry_as<double>("AlphaS_Lambda5", -1.0);
+  double qcdl5;
+  getlam5m_(nset, nmem, qcdl5);
+  return qcdl5;
 }
 
 

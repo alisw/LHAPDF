@@ -9,6 +9,27 @@
 The source files can be downloaded from https://www.hepforge.org/downloads/lhapdf
 
 
+@section quickstart Quick start instructions
+
+If you have a C++ compiler and the Boost C++ library+headers installed in system
+paths, building LHAPDF should be straightforward:
+
+    wget http://www.hepforge.org/archive/lhapdf/LHAPDF-6.X.Y.tar.gz
+    tar xf LHAPDF-6.X.Y.tar.gz
+    cd LHAPDF-6.X.Y
+    ./configure --prefix=/path/for/installation
+    make
+    make install
+
+You will then need to install PDF data files, most easily using the "lhapdf"
+manager script but also possible by manual download. See the LHAPDF website for
+details.
+
+On systems where you want to use non-system compilers and libraries, the
+configure command will need to be a bit more complicated: see the following for
+more information.
+
+
 @section compilers Build tools
 
 LHAPDF6 just needs your system to have a copy of Make and a C++ compiler: there
@@ -22,6 +43,8 @@ please see @ref osx.
 
 
 @section externals External dependencies
+
+@subsection boost Boost
 
 LHAPDF6 makes use of header files from the Boost C++ utility library
 (http://www.boost.org). On Linux machines this should typically be available via
@@ -40,6 +63,18 @@ you can just use the header files direct from its source tarball: this is not
 wonderfully neat, but is a lot easier than doing a full manual build and
 installation of the Boost libraries.
 
+
+@subsection pyext Python
+
+If you want to build the Python interface to LHAPDF (which is very nice!), you
+will need the Python development headers to be installed (e.g. via the
+`python-dev` Ubuntu package). If the `Python.h` header is not found by
+`configure`, no Python extension module will be built.
+
+
+<!--
+@subsection cmake CMake (old versions only)
+
 @note In version 6.0.5, the CMake system (i.e. `cmake` command) must also be
 installed, in order to build an internal copy of the yaml-cpp parser library
 (http://code.google.com/p/yaml-cpp/) used to read the PDF metadata which is in
@@ -47,44 +82,44 @@ YAML format (http://www.yaml.org). Before this you needed to install an external
 version of yaml-cpp. Both these requirements were removed in version 6.1.0,
 where a special version of yaml-cpp is built internally without needing CMake at
 all: you should upgrade to the v6.1 releases to make life easy!
+-->
 
 
 @section lhapdf Building LHAPDF
 
-If you have downloaded a release tarball, unpack it with `tar xf
-LHAPDF-xxx.tar.gz`, then `cd` to the newly-created directory.
+If you have downloaded a release tarball for LHAPDF 6.X.Y, unpack it with `tar
+xf LHAPDF-6.X.Y.tar.gz`, then `cd` to the newly-created directory.
 
 @note If checking out from version control rather than unpacking a tarball,
 again `cd` to the new directory, but you must then also run `autoreconf -i`
 before proceeding to the instructions below. There will also be more
 requirements for external packages if you build this way, since this is the
-"developer" route to building LHAPDF and requires a bit more expertise (believe
-it or not we are trying to make life simpler for normal users ;-) )
+"developer" route to building LHAPDF and requires a bit more expertise.
 
 Now you should run the `configure` script to analyse your machine, compiler,
 etc. and set up the Makefiles. You will probably need to provide the `--prefix`
 argument to `configure` to tell it where you want to install LHAPDF (probably
 you don't want to install to `/usr/local`, which is the default) and perhaps use
 the `--with-boost` flag to indicate the locations of your
-Boost installation.
-
-@note These flags expect the "base" location of the package, e.g. if you have
-installed library X such that there are headers in `/foo/include/` (or
-`/foo/include/X`) and a compiled library (or libraries) in `/foo/lib/` then you
-would use `--with-X=/foo`.
-
-If you want to build the Python interface to LHAPDF (which is very nice!), you
-will need the Python development headers to be installed (e.g. via the
-`python-dev` Ubuntu package). If the `Python.h` header is not found by
-`configure`, no Python extension module will be built.
-
-In conclusion, an example call to LHAPDF's `configure` script might look like:
+Boost installation. For example,
 
     ./configure --prefix=$HOME/local
 
-(This should be appropriate if you have installed Boost in `/usr` via your
-machine's packaging system.) An example build script for LHAPDF6 on the CERN
-lxplus6 system is shown at the end of these instructions.
+should be appropriate if you have installed Boost in `/usr` via your
+machine's packaging system. If not, you will need something like
+
+    ./configure --prefix=$HOME/local --with-boost=$HOME/pkgs/boost-1_58
+
+The `--prefix`, `--with-boost`, etc. path flags expect the "base" location of
+the package, e.g. if you have installed library X such that there are headers in
+`/foo/include/` (or `/foo/include/X`) and a compiled library (or libraries) in
+`/foo/lib/` then you would use `--with-X=/foo`.
+
+An example build script for LHAPDF6 on the CERN lxplus6 system is shown at the
+end of these instructions.
+
+
+@subsection altcomp Alternative compilers
 
 If you want to use an alternative C++ compiler, then you can specify the CXX
 variable on the command line. This is essential on OS X Mavericks and later,

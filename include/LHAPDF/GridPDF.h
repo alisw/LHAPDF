@@ -22,7 +22,14 @@ namespace LHAPDF {
     /// @name Creation and deletion
     //@{
 
-    /// @brief Constructor from a file path.
+    /// Default constructor, making an empty PDF to be populated by hand.
+    GridPDF() {
+      _mempath = "";
+      _info = PDFInfo();
+      _forcePos = -1;
+    }
+
+    /// @brief Constructor from a file path
     ///
     /// We allow this to exist and be user-callable for testing and other
     /// special case uses, since if you are explicitly instantiating a GridPDF
@@ -35,21 +42,21 @@ namespace LHAPDF {
       _forcePos = -1;
     }
 
-    /// Constructor from a set name and member ID.
+    /// Constructor from a set name and member ID
     GridPDF(const std::string& setname, int member) {
       _loadInfo(setname, member); // Sets _mempath
       _loadData(_mempath);
       _forcePos = -1;
     }
 
-    /// Constructor from a set name and member ID.
+    /// Constructor from an LHAPDF ID
     GridPDF(int lhaid) {
       _loadInfo(lhaid); // Sets _mempath
       _loadData(_mempath);
       _forcePos = -1;
     }
 
-    /// Virtual destructor to allow inheritance.
+    /// Virtual destructor to allow inheritance
     virtual ~GridPDF() { }
 
     //@}
@@ -173,6 +180,11 @@ namespace LHAPDF {
 
     /// @name Info about the grid, and access to the raw data points
     //@{
+
+    /// Directly access the knot arrays in non-const mode, for programmatic filling
+    std::map<double, KnotArrayNF>& knotarrays() {
+      return _knotarrays;
+    }
 
     /// Get the N-flavour subgrid containing Q2 = q2
     const KnotArrayNF& subgrid(double q2) const {

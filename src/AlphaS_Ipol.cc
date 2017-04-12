@@ -71,8 +71,6 @@ namespace LHAPDF {
     const double p1 = (-2*t3 + 3*t2)*VH;
     const double m1 = (t3 - t2)*VDH;
 
-    /// @todo For consistency with the ODE solver define divergence at alpha_s > 2.
-    /// @todo Will this break anything (are there PDFs that will want to interpolate values over 2. ?)
     return abs(p0 + m0 + p1 + m1) < 2. ? p0 + m0 + p1 + m1 : std::numeric_limits<double>::max();
   }
 

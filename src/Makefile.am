@@ -7,13 +7,13 @@ AM_CPPFLAGS += -I$(top_srcdir)/include -I$(prefix)/include $(BOOST_CPPFLAGS)
 AM_LDFLAGS += -L$(top_builddir)/src -L$(prefix)/lib -avoid-version
 
 libLHAPDF_la_SOURCES = \
-  PDF.cc PDFSet.cc GridPDF.cc PDFInfo.cc \
+  PDF.cc PDFSet.cc GridPDF.cc CompositePDF.cc PDFInfo.cc \
   Interpolator.cc BilinearInterpolator.cc BicubicInterpolator.cc \
   LogBilinearInterpolator.cc LogBicubicInterpolator.cc \
   ErrExtrapolator.cc NearestPointExtrapolator.cc \
   ContinuationExtrapolator.cc \
   AlphaS.cc AlphaS_Analytic.cc AlphaS_ODE.cc AlphaS_Ipol.cc \
-  Factories.cc
+  Config.cc Factories.cc
 
 libLHAPDFInfo_la_SOURCES = Info.cc
 libLHAPDFInfo_la_CPPFLAGS = -I$(srcdir)/yamlcpp -DYAMLCPP_API=3 -DYAML_NAMESPACE=LHAPDF_YAML $(AM_CPPFLAGS)

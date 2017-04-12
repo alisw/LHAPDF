@@ -7,6 +7,7 @@ DIST_SUBDIRS = $(SUBDIRS) examples doc
 
 bin_SCRIPTS = lhapdf-config lhapdf
 dist_pkgdata_DATA = lhapdf.conf pdfsets.index
+# TODO: Add plotpdfs, testpdfs, testlhapdf as noinst_SCRIPTS?
 
 pkgconfigdir = $(libdir)/pkgconfig
 dist_pkgconfig_DATA = lhapdf.pc

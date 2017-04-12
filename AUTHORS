@@ -25,12 +25,15 @@ Testing, advice, etc.:
 CITATION
 ========
 
-Please cite the contribution
+Please make sure to cite the following paper if you use LHAPDF6:
+
+  "LHAPDF6: parton density access in the LHC precision era"
+  Eur.Phys.J. C75 (2015) 3, 132
+  http://arxiv.org/abs/1412.7420
+
+An earlier write-up of progress on LHAPDF6 appeared in the Les Houches workshop proceedings:
 
   "New access to PDF data via LHAPDF6", by A. Buckley
   in "Les Houches 2013: Physics at TeV Colliders: Standard Model Working Group Report"
   http://arxiv.org/abs/1405.1067
   http://inspirehep.net/search?p=find+eprint+1405.1067
-
-A full write-up of LHAPDF6 will appear as soon as possible and
-will replace this current recommendation.

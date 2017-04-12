@@ -2,6 +2,7 @@
 # -*- python -*-
 
 import lhapdf
+lhapdf.setVerbosity(0)
 
 sets = []
 for s in lhapdf.availablePDFSets():
@@ -9,4 +10,4 @@ for s in lhapdf.availablePDFSets():
     sets.append([i.lhapdfID, i.name, i.dataversion])
 for id, name, version in sorted(sets):
     if id > 0:
-        print id, name, version
+        print('%d %s %d' % (id,name,version))

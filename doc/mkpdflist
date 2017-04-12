@@ -2,7 +2,8 @@
 # -*- python -*-
 
 import lhapdf
-lhamajversion = ".".join( lhapdf.version().split(".")[:2] )
+lhapdf.setVerbosity(0)
+lhamajversion = ".".join( lhapdf.version().split(".")[:2] ) #< TODO: convert to full version?
 
 sets = {}
 nvalid = 0
@@ -35,7 +36,7 @@ faithfully to their LHAPDF5 equivalents (see above), but please take care.\n\n""
 s += "  <table>\n"
 s += "    <tr><th>%LHAPDF ID</th><th>Set name</th><th>Number of set members</th><th>Latest data version</th><th>Notes</th></tr>\n"
 
-for lhaid, ps in sorted(sets.iteritems()):
+for lhaid, ps in sorted(sets.items()):
     color = "#fee" if ps.dataversion < 0 else "#efe"
     baseurl = "http://www.hepforge.org/archive/lhapdf/pdfsets/" + str(lhamajversion)
     if ps.dataversion < 0:
@@ -48,4 +49,4 @@ s += "  </table>\n"
 
 s += "\n*/\n"
 
-print s
+print(s)

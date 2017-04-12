@@ -31,7 +31,7 @@ namespace LHAPDF {
       static Config _cfg; //< Could we use the Info(path) constructor for automatic init-once behaviour?
       // Test for emptiness and only initialise *once*:
       if (_cfg._metadict.empty()) {
-        string confpath = findFile("lhapdf.conf");
+        std::string confpath = findFile("lhapdf.conf");
         if (!confpath.empty()) _cfg.load(confpath);
       }
       return _cfg;
@@ -39,10 +39,17 @@ namespace LHAPDF {
 
     //@}
 
+
+    /// Config destructor, used for end-of-run banner printing
+    ~Config();
+
+
   private:
 
     /// Hide the default constructor
-    Config() { }
+    Config() {
+      // std::cout << "CONFIG CONSTRUCTION" << std::endl;
+    }
 
     //@}
 

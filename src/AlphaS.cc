@@ -13,8 +13,10 @@ namespace LHAPDF {
   AlphaS::AlphaS() {
     _qcdorder = 4;
     _mz = 91.1876;
+    _alphas_mz = 0.118;
     _flavorscheme = VARIABLE;
     _fixflav = -1;
+    _customref = false;
   }
 
 
