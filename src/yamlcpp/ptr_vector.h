@@ -12,30 +12,30 @@
 #include <vector>
 
 namespace LHAPDF_YAML {
-	
+
 	template <typename T>
 	class ptr_vector: private LHAPDF_YAML::noncopyable
 	{
 	public:
 		ptr_vector() {}
 		~ptr_vector() { clear(); }
-		
+
 		void clear() {
 			for(unsigned i=0;i<m_data.size();i++)
 				delete m_data[i];
 			m_data.clear();
 		}
-		
+
 		std::size_t size() const { return m_data.size(); }
 		bool empty() const { return m_data.empty(); }
-		
-		void push_back(std::auto_ptr<T> t) {
+
+		void push_back(std::unique_ptr<T> t) {
 			m_data.push_back(NULL);
 			m_data.back() = t.release();
 		}
 		T& operator[](std::size_t i) { return *m_data[i]; }
 		const T& operator[](std::size_t i) const { return *m_data[i]; }
-		
+
 		T& back() { return *m_data.back(); }
 		const T& back() const { return *m_data.back(); }
 

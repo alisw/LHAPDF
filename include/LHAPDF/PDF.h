@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2014 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_PDF_H
@@ -27,17 +27,22 @@ namespace LHAPDF {
   protected: //< These constructors should only be called by subclasses
 
     /// Internal convenience typedef for the AlphaS object handle
-    // typedef AlphaS* AlphaSPtr;
-    typedef auto_ptr<AlphaS> AlphaSPtr;
+    /// @todo Reinstate this unique_ptr when C++98 header compatibility is no longer an issue
+    // typedef unique_ptr<AlphaS> AlphaSPtr;
+    typedef AlphaS* AlphaSPtr;
 
     /// Force initialization of the only non-class member.
-    PDF() : _forcePos(0) { }
+    /// @todo Remove _alphas initialisation when it can be a smart ptr again
+    PDF() : _alphas(0), _forcePos(0) { }
 
 
   public:
 
     /// Virtual destructor, to allow unfettered inheritance
-    virtual ~PDF() { }
+    virtual ~PDF() {
+      /// @todo Remove this delete when C++98 is gone, and unique_ptr can be reinstated
+      delete _alphas;
+    }
 
     //@}
 
@@ -48,30 +53,7 @@ namespace LHAPDF {
     /// @name Helper methods for info loading / path setting, used by derived types
     //@{
 
-    void _loadInfo(const std::string& mempath) {
-      if (mempath.empty())
-        throw UserError("Tried to initialize a PDF with a null data file path... oops");
-      _mempath = mempath;
-      _info = PDFInfo(mempath);
-      //_info = PDFInfo(_setname(), memberID());
-      /// Check that this is a sufficient version LHAPDF for this PDF
-      if (_info.has_key("MinLHAPDFVersion")) {
-        if (_info.get_entry_as<int>("MinLHAPDFVersion") > LHAPDF_VERSION_CODE) {
-          throw VersionError("Current LHAPDF version " + to_str(LHAPDF_VERSION_CODE)
-                             + " less than required " + _info.get_entry("MinLHAPDFVersion"));
-        }
-      }
-      /// Print out a banner if sufficient verbosity is enabled
-      const int v = verbosity();
-      if (v > 0) {
-        std::cout << "LHAPDF " << version() << " loading " << mempath << std::endl;
-        print(std::cout, v);
-      }
-      /// Print out a warning message if this PDF data is unvalidated
-      if (_info.get_entry_as<int>("DataVersion", -1) <= 0) {
-        std::cerr << "WARNING: this PDF is preliminary, unvalidated, and not for production use!" << std::endl;
-      }
-    }
+    void _loadInfo(const std::string& mempath);
 
     void _loadInfo(const std::string& setname, int member) {
       const string searchpath = findpdfmempath(setname, member);
@@ -104,31 +86,7 @@ namespace LHAPDF {
     /// @param x Momentum fraction
     /// @param q2 Squared energy (renormalization) scale
     /// @return The value of xf(x,q2)
-    double xfxQ2(int id, double x, double q2) const {
-      // Physical x range check
-      if (!inPhysicalRangeX(x)) {
-        throw RangeError("Unphysical x given: " + to_str(x));
-      }
-      // Physical Q2 range check
-      if (!inPhysicalRangeQ2(q2)) {
-        throw RangeError("Unphysical Q2 given: " + to_str(q2));
-      }
-      // Treat PID = 0 as always equivalent to a gluon: query as PID = 21
-      const int id2 = (id != 0) ? id : 21; //< @note Treat 0 as an alias for 21
-      // Undefined PIDs
-      if (!hasFlavor(id2)) return 0.0;
-      // Call the delegated method in the concrete PDF object to calculate the in-range value
-      double xfx = _xfxQ2(id2, x, q2);
-      // Apply positivity forcing at the enabled level
-      switch (forcePositive()) {
-      case 0: break;
-      case 1: if (xfx < 0) xfx = 0; break;
-      case 2: if (xfx < 1e-10) xfx = 1e-10; break;
-      default: throw LogicError("ForcePositive value not in expected range!");
-      }
-      // Return
-      return xfx;
-    }
+    double xfxQ2(int id, double x, double q2) const;
 
 
     /// @brief Get the PDF xf(x) value at (x,q) for the given PID.
@@ -154,10 +112,7 @@ namespace LHAPDF {
     /// @param x Momentum fraction
     /// @param q2 Squared energy (renormalization) scale
     /// @param rtn Map of PDF xf(x,q2) values, to be filled
-    void xfxQ2(double x, double q2, std::map<int, double>& rtn) const {
-      rtn.clear();
-      BOOST_FOREACH (int id, flavors()) rtn[id] = xfxQ2(id, x, q2);
-    }
+    void xfxQ2(double x, double q2, std::map<int, double>& rtn) const;
 
 
     /// @brief Get the PDF xf(x) value at (x,q) for all supported PIDs.
@@ -185,15 +140,7 @@ namespace LHAPDF {
     /// @param x Momentum fraction
     /// @param q2 Squared energy (renormalization) scale
     /// @param rtn Vector of PDF xf(x,q2) values, to be filled
-    void xfxQ2(double x, double q2, std::vector<double>& rtn) const {
-      rtn.clear();
-      rtn.resize(13);
-      for (int i = 0; i < 13; ++i) {
-        const int id = i-6; // PID = 0 is automatically treated as PID = 21
-        rtn[i] = xfxQ2(id, x, q2);
-      }
-    }
-
+    void xfxQ2(double x, double q2, std::vector<double>& rtn) const;
 
     /// @brief Get the PDF xf(x) value at (x,q) for "standard" PIDs.
     ///
@@ -220,11 +167,7 @@ namespace LHAPDF {
     /// @param x Momentum fraction
     /// @param q2 Squared energy (renormalization) scale
     /// @return A map of PDF xf(x,q2) values
-    std::map<int, double> xfxQ2(double x, double q2) const {
-      std::map<int, double> rtn;
-      xfxQ2(x, q2, rtn);
-      return rtn;
-    }
+    std::map<int, double> xfxQ2(double x, double q2) const;
 
     /// @brief Get the PDF xf(x) value at (x,q) for all supported PIDs.
     ///
@@ -436,7 +379,7 @@ namespace LHAPDF {
 
     /// Get the type of PDF member that this object represents (central, error)
     std::string type() const {
-      return to_lower_copy(info().get_entry("PdfType"));
+      return to_lower(info().get_entry("PdfType"));
     }
 
     //@}
@@ -466,11 +409,7 @@ namespace LHAPDF {
     }
 
     /// Checks whether @a id is a valid parton for this PDF.
-    bool hasFlavor(int id) const {
-      const int id2 = (id != 0) ? id : 21; //< @note Treat 0 as an alias for 21
-      const vector<int>& ids = flavors();
-      return find(ids.begin(), ids.end(), id2) != ids.end();
-    }
+    bool hasFlavor(int id) const;
 
     /// @brief Order of QCD at which this PDF has been constructed
     ///
@@ -506,12 +445,12 @@ namespace LHAPDF {
     /// and ownership passes to this GridPDF: delete will be called on this ptr
     /// when this PDF goes out of scope or another setAlphaS call is made.
     void setAlphaS(AlphaS* alphas) {
-      _alphas.reset(alphas);
+      // _alphas.reset(alphas);
     }
 
     /// @brief Check if an AlphaS calculator is set
     bool hasAlphaS() const {
-      return _alphas.get() != 0;
+      return _alphas;
     }
 
     /// @brief Retrieve the AlphaS object for this PDF
@@ -537,8 +476,7 @@ namespace LHAPDF {
     /// Calculated numerically, analytically, or interpolated according to
     /// metadata, using the AlphaS classes.
     double alphasQ2(double q2) const {
-      if (!hasAlphaS())
-        _alphas.reset( mkAlphaS(info()) );
+      if (!hasAlphaS()) throw Exception("No AlphaS pointer has been set");
       return _alphas->alphasQ2(q2);
     }
 
@@ -546,6 +484,12 @@ namespace LHAPDF {
 
 
   protected:
+
+    void _loadAlphaS() {
+      // _alphas.reset( mkAlphaS(info()) );
+      if (hasAlphaS()) delete _alphas;
+      _alphas = mkAlphaS(info());
+    }
 
     /// Get the set name from the member data file path (for internal use only)
     std::string _setname() const {

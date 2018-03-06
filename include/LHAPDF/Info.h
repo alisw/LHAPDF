@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2014 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_Info_H
@@ -177,10 +177,8 @@ namespace LHAPDF {
 
   template <>
   inline std::vector<std::string> Info::get_entry_as(const std::string& key) const {
-    const string& s = get_entry(key);
-    vector<string> rtn;
-    split(rtn, s, is_any_of(","), token_compress_on);
-    return rtn;
+    static const string delim = ",";
+    return split(get_entry(key), delim);
   }
 
   template <>
@@ -188,7 +186,8 @@ namespace LHAPDF {
     const vector<string> strs = get_entry_as< vector<string> >(key);
     vector<int> rtn;
     rtn.reserve(strs.size());
-    BOOST_FOREACH (const string& s, strs) rtn.push_back( lexical_cast<int>(s) );
+    // for (const string& s : strs) rtn.push_back( lexical_cast<int>(s) ); //< @todo Restore when C++11 guaranteed
+    for (size_t i = 0; i < strs.size(); ++i) rtn.push_back( lexical_cast<int>(strs[i]) );
     assert(rtn.size() == strs.size());
     return rtn;
   }
@@ -198,7 +197,8 @@ namespace LHAPDF {
     const vector<string> strs = get_entry_as< vector<string> >(key);
     vector<double> rtn;
     rtn.reserve(strs.size());
-    BOOST_FOREACH (const string& s, strs) rtn.push_back( lexical_cast<double>(s) );
+    //for (const string& s : strs) rtn.push_back( lexical_cast<double>(s) ); //< @todo Restore when C++11 guaranteed
+    for (size_t i = 0; i < strs.size(); ++i) rtn.push_back( lexical_cast<double>(strs[i]) );
     assert(rtn.size() == strs.size());
     return rtn;
   }

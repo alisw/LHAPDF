@@ -8,14 +8,14 @@ namespace LHAPDF_YAML
 		if(!m_pOwner)
 			m_pOwner = this;
 	}
-	
+
 	NodeOwnership::~NodeOwnership()
 	{
 	}
 
 	Node& NodeOwnership::_Create()
 	{
-		m_nodes.push_back(std::auto_ptr<Node>(new Node));
+		m_nodes.push_back(std::unique_ptr<Node>(new Node));
 		return m_nodes.back();
 	}
 

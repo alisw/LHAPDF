@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2014 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/AlphaS.h"
 #include "LHAPDF/Utils.h"
@@ -11,7 +11,7 @@ namespace LHAPDF {
 
   // Base class constructor for default param setup
   AlphaS::AlphaS() {
-    _qcdorder = 4;
+    _qcdorder = 5;
     _mz = 91.1876;
     _alphas_mz = 0.118;
     _flavorscheme = VARIABLE;
@@ -51,6 +51,9 @@ namespace LHAPDF {
     if (i == 3) return (double) 1.172686 - 0.2785458*nf + 0.01624467*nf*nf + 0.0000601247*nf*nf*nf;
     // ( (149753/6.) + 3564*ZETA_3 - ((1078361/162.) + (6502/27.)*ZETA_3)*nf +
     // ((50065/162.) + (6472/81.)*ZETA_3)*sqr(nf) + (1093/729.)*sqr(nf)*nf)/(256*sqr(M_PI)*sqr(M_PI))
+    if (i == 4) return (double) 1.714138 - 0.5940794*nf + 0.05607482*nf*nf - 0.0007380571*nf*nf*nf - 0.00000587968*nf*nf*nf*nf;
+    // ... if you want the analytic form just look them up in hep-ph/1606.08659
+
 
     throw Exception("Invalid index " + to_str(i) + " for requested beta function");
   }
@@ -59,7 +62,7 @@ namespace LHAPDF {
   // Calculate beta functions given the number of active flavours
   vector<double> AlphaS::_betas(int nf) const {
     vector<double> rtn; rtn.reserve(4);
-    for (int i = 0; i < 4; ++i) rtn.push_back(_beta(i, nf));
+    for (int i = 0; i < 5; ++i) rtn.push_back(_beta(i, nf));
     return rtn;
   }
 

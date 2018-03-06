@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2014 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/NearestPointExtrapolator.h"
 #include "LHAPDF/GridPDF.h"
@@ -13,7 +13,7 @@ namespace LHAPDF {
 
     // Return the value in the given list that best matches the target value
     double _findClosestMatch(const vector<double>& cands, double target) {
-      // cout << "From NPXpol: knots = ["; BOOST_FOREACH (double c, cands) cout << c << " "; cout << endl;
+      // cout << "From NPXpol: knots = ["; for (double c : cands) cout << c << " "; cout << endl;
       vector<double>::const_iterator it = lower_bound(cands.begin(), cands.end(), target);
       const double upper = *it;
       const double lower = (it == cands.begin()) ? upper : *(--it); //< Avoid decrementing the first entry

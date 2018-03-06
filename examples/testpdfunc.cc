@@ -8,7 +8,7 @@
 // number of parameter variations determined by counting "+" symbols.
 
 #include "LHAPDF/LHAPDF.h"
-#include <boost/random.hpp>
+#include <random>
 using namespace std;
 
 // Simple test program to demonstrate the three PDFSet member functions.
@@ -143,24 +143,19 @@ int main(int argc, char* argv[]) {
 
     // Generate random values from Hessian best-fit and eigenvector values.
     // See: G. Watt and R.S. Thorne, JHEP 1208 (2012) 052 [arXiv:1205.4024 [hep-ph]].
-    // Obtain Gaussian random numbers using Boost, but could also use C++11.
 
     // If npar > 0 exclude the last 2*npar members (parameter variations).
     const int npdfmem = nmem - 2*npar;
     const int neigen = (LHAPDF::startswith(set.errorType(), "hessian")) ? npdfmem/2 : npdfmem;
     const unsigned seed = 1234;
-    // C++11: default_random_engine generator(seed);
-    // C++11: normal_distribution<double> distribution; // mean 0.0, s.d. = 1.0
-    boost::mt19937 rng(seed);
-    boost::normal_distribution<> nd;
-    boost::variate_generator<boost::mt19937&, boost::normal_distribution<> > var_nor(rng, nd);
+    default_random_engine generator(seed);
+    normal_distribution<double> distribution; //< mean 0.0, s.d. = 1.0
     const int nrand = 5; // generate nrand random values
     for (int irand = 1; irand <= nrand; irand++) {
       // Fill vector "randoms" with neigen Gaussian random numbers.
       vector<double> randoms;
       for (int ieigen=1; ieigen <= neigen; ieigen++) {
-        // C++11: double r = distribution(generator); // using C++11
-        double r = var_nor(); // using Boost
+        double r = distribution(generator);
         randoms.push_back(r);
       }
       // const bool symmetrise = false; // average differs from best-fit

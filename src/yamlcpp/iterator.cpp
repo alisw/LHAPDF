@@ -8,7 +8,7 @@ namespace LHAPDF_YAML
 	{
 	}
 
-	Iterator::Iterator(std::auto_ptr<IterPriv> pData): m_pData(pData)
+  Iterator::Iterator(std::unique_ptr<IterPriv> pData): m_pData(std::move(pData))
 	{
 	}
 

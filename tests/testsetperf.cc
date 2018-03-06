@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
   std::cout << "Total = " << (end - start) << std::endl;
 
   #if LHAPDF_MAJOR_VERSION > 5
-  BOOST_FOREACH (const LHAPDF::PDF* pdf, pdfs) delete pdf;
+  for (const LHAPDF::PDF* pdf : pdfs) delete pdf;
   #endif
 
   return 0;

@@ -1,13 +1,10 @@
 ACLOCAL_AMFLAGS = -I m4
 
-EXTRA_DIST = mkindex
-
-SUBDIRS = src include wrappers tests
+SUBDIRS = src include wrappers tests bin
 DIST_SUBDIRS = $(SUBDIRS) examples doc
 
-bin_SCRIPTS = lhapdf-config lhapdf
+dist_noinst_SCRIPTS = mkindex plotpdfs testpdfs testlhapdf
 dist_pkgdata_DATA = lhapdf.conf pdfsets.index
-# TODO: Add plotpdfs, testpdfs, testlhapdf as noinst_SCRIPTS?
 
 pkgconfigdir = $(libdir)/pkgconfig
 dist_pkgconfig_DATA = lhapdf.pc

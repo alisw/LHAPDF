@@ -7,7 +7,6 @@ pkginclude_HEADERS = \
   PDFInfo.h \
   PDF.h \
   GridPDF.h \
-  CompositePDF.h \
   KnotArray.h \
   Utils.h \
   Paths.h \

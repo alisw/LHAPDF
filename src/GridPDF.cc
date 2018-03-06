@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2014 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/GridPDF.h"
 #include "LHAPDF/Interpolator.h"
@@ -16,6 +16,79 @@
 using namespace std;
 
 namespace LHAPDF {
+
+
+  void GridPDF::setInterpolator(Interpolator* ipol) {
+    _interpolator.reset(ipol);
+    _interpolator->bind(this);
+  }
+
+  void GridPDF::setInterpolator(const std::string& ipolname) {
+    setInterpolator(mkInterpolator(ipolname));
+  }
+
+  void GridPDF::_loadInterpolator() {
+    const string ipolname = info().get_entry("Interpolator");
+    /// @todo What if there is no Interpolator key?
+    setInterpolator(ipolname);
+  }
+
+  const Interpolator& GridPDF::interpolator() const {
+    if (!hasInterpolator()) throw Exception("No Interpolator pointer set");
+    return *_interpolator;
+  }
+
+
+
+  void GridPDF::setExtrapolator(Extrapolator* xpol) {
+    _extrapolator.reset(xpol);
+    _extrapolator->bind(this);
+  }
+
+  void GridPDF::setExtrapolator(const std::string& xpolname) {
+    setExtrapolator(mkExtrapolator(xpolname));
+  }
+
+  void GridPDF::_loadExtrapolator() {
+    const string xpolname = info().get_entry("Extrapolator");
+    /// @todo What if there is no Extrapolator key?
+    setExtrapolator(xpolname);
+  }
+
+  const Extrapolator& GridPDF::extrapolator() const {
+    if (!hasExtrapolator()) throw Exception("No Extrapolator pointer set");
+    return *_extrapolator;
+  }
+
+
+  const KnotArrayNF& GridPDF::subgrid(double q2) const {
+    assert(q2 >= 0);
+    assert(!q2Knots().empty());
+    map<double, KnotArrayNF>::const_iterator it = _knotarrays.upper_bound(q2);
+    if (it == _knotarrays.begin())
+      throw GridError("Requested Q2 " + to_str(q2) + " is lower than any available Q2 subgrid (lowest Q2 = " + to_str(q2Knots().front()) + ")");
+    if (it == _knotarrays.end() && q2 > q2Knots().back())
+      throw GridError("Requested Q2 " + to_str(q2) + " is higher than any available Q2 subgrid (highest Q2 = " + to_str(q2Knots().back()) + ")");
+    --it; // upper_bound (and lower_bound) returns the entry *above* q2: we need to decrement by one element
+    // std::cout << "Using subgrid #" << std::distance(_knotarrays.begin(), it) << std::endl;
+    return it->second;
+  }
+
+
+  const vector<double>& GridPDF::q2Knots() const {
+    if (_q2knots.empty()) {
+      // Get the list of Q2 knots by combining all subgrids
+      for (const pair<double, KnotArrayNF>& q2_ka : _knotarrays) {
+        const KnotArrayNF& subgrid = q2_ka.second;
+        const KnotArray1F& grid1 = subgrid.get_first();
+        if (grid1.q2s().empty()) continue; //< @todo This shouldn't be possible, right? Throw instead, or ditch the check?
+        for (double q2 : grid1.q2s()) {
+          if (_q2knots.empty() || q2 != _q2knots.back()) _q2knots.push_back(q2);
+        }
+      }
+    }
+    return _q2knots;
+  }
 
 
   double GridPDF::_xfxQ2(int id, double x, double q2) const {
@@ -94,7 +167,7 @@ namespace LHAPDF {
       NumParser nparser; double ftoken; int itoken;
       while (getline(file, line)) {
         // Trim the current line to ensure that there is no effect of leading spaces, etc.
-        trim(line);
+        line = trim(line);
         prevline = line; // used to test the last line after the while loop fails
 
         // If the line is commented out, increment the line number but not the block line
@@ -130,7 +203,7 @@ namespace LHAPDF {
           } else {
             if (iblockline == 4) { // on the first line of the xf block, resize the arrays
               ipid_xfs.resize(pids.size());
-              const size_t subgridsize = xs.size() * q2s.size();
+              const size_t subgridsize = xs.size()*q2s.size();
               for (size_t ipid = 0; ipid < pids.size(); ++ipid) {
                 ipid_xfs[ipid].reserve(subgridsize);
               }
@@ -168,7 +241,7 @@ namespace LHAPDF {
               // Create the 2D array with the x and Q2 knot positions
               arraynf[pid] = KnotArray1F(xs, q2s);
               // Populate the xf data array
-              arraynf[pid].xfs().assign(ipid_xfs[ipid].begin(), ipid_xfs[ipid].end());
+              arraynf[pid].setxfs(ipid_xfs[ipid]);
             }
           }
 
@@ -185,7 +258,7 @@ namespace LHAPDF {
       if (prevline != "---")
         throw ReadError("Grid file " + mempath + " is not properly terminated: .dat files MUST end with a --- separator line");
 
-    // Error handling
+      // Error handling
     } catch (Exception& e) {
       throw;
     } catch (std::exception& e) {

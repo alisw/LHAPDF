@@ -8,7 +8,7 @@ namespace LHAPDF_YAML
 	{
 		// start up
 		m_stateStack.push(ES_WAITING_FOR_DOC);
-		
+
 		// set default global manipulators
 		m_charset.set(EmitNonAscii);
 		m_strFmt.set(Auto);
@@ -25,7 +25,7 @@ namespace LHAPDF_YAML
         m_floatPrecision.set(6);
         m_doublePrecision.set(15);
 	}
-	
+
 	EmitterState::~EmitterState()
 	{
 	}
@@ -45,14 +45,14 @@ namespace LHAPDF_YAML
 		SetFlowType(GT_MAP, value, LOCAL);
 		SetMapKeyFormat(value, LOCAL);
 	}
-	
+
 	void EmitterState::BeginGroup(GROUP_TYPE type)
 	{
 		unsigned lastIndent = (m_groups.empty() ? 0 : m_groups.top().indent);
 		m_curIndent += lastIndent;
-		
-		std::auto_ptr<Group> pGroup(new Group(type));
-		
+
+		std::unique_ptr<Group> pGroup(new Group(type));
+
 		// transfer settings (which last until this group is done)
 		pGroup->modifiedSettings = m_modifiedSettings;
 
@@ -61,17 +61,17 @@ namespace LHAPDF_YAML
 		pGroup->indent = GetIndent();
 		pGroup->usingLongKey = (GetMapKeyFormat() == LongKey ? true : false);
 
-		m_groups.push(pGroup);
+		m_groups.push(std::move(pGroup));
 	}
-	
+
 	void EmitterState::EndGroup(GROUP_TYPE type)
 	{
 		if(m_groups.empty())
 			return SetError(ErrorMsg::UNMATCHED_GROUP_TAG);
-		
+
 		// get rid of the current group
 		{
-			std::auto_ptr<Group> pFinishedGroup = m_groups.pop();
+			std::unique_ptr<Group> pFinishedGroup = m_groups.pop();
 			if(pFinishedGroup->type != type)
 				return SetError(ErrorMsg::UNMATCHED_GROUP_TAG);
 		}
@@ -80,41 +80,41 @@ namespace LHAPDF_YAML
 		unsigned lastIndent = (m_groups.empty() ? 0 : m_groups.top().indent);
 		assert(m_curIndent >= lastIndent);
 		m_curIndent -= lastIndent;
-		
+
 		// some global settings that we changed may have been overridden
 		// by a local setting we just popped, so we need to restore them
 		m_globalModifiedSettings.restore();
 	}
-		
+
 	GROUP_TYPE EmitterState::GetCurGroupType() const
 	{
 		if(m_groups.empty())
 			return GT_NONE;
-		
+
 		return m_groups.top().type;
 	}
-	
+
 	FLOW_TYPE EmitterState::GetCurGroupFlowType() const
 	{
 		if(m_groups.empty())
 			return FT_NONE;
-		
+
 		return (m_groups.top().flow == Flow ? FT_FLOW : FT_BLOCK);
 	}
-	
+
 	bool EmitterState::CurrentlyInLongKey()
 	{
 		if(m_groups.empty())
 			return false;
 		return m_groups.top().usingLongKey;
 	}
-	
+
 	void EmitterState::StartLongKey()
 	{
 		if(!m_groups.empty())
 			m_groups.top().usingLongKey = true;
 	}
-	
+
 	void EmitterState::StartSimpleKey()
 	{
 		if(!m_groups.empty())
@@ -137,7 +137,7 @@ namespace LHAPDF_YAML
 				return false;
 		}
 	}
-	
+
 	bool EmitterState::SetStringFormat(EMITTER_MANIP value, FMT_SCOPE scope)
 	{
 		switch(value) {
@@ -151,7 +151,7 @@ namespace LHAPDF_YAML
 				return false;
 		}
 	}
-	
+
 	bool EmitterState::SetBoolFormat(EMITTER_MANIP value, FMT_SCOPE scope)
 	{
 		switch(value) {
@@ -207,7 +207,7 @@ namespace LHAPDF_YAML
 	{
 		if(value == 0)
 			return false;
-		
+
 		_Set(m_indent, value, scope);
 		return true;
 	}
@@ -216,16 +216,16 @@ namespace LHAPDF_YAML
 	{
 		if(value == 0)
 			return false;
-		
+
 		_Set(m_preCommentIndent, value, scope);
 		return true;
 	}
-	
+
 	bool EmitterState::SetPostCommentIndent(unsigned value, FMT_SCOPE scope)
 	{
 		if(value == 0)
 			return false;
-		
+
 		_Set(m_postCommentIndent, value, scope);
 		return true;
 	}
@@ -248,11 +248,11 @@ namespace LHAPDF_YAML
 		FLOW_TYPE flowType = GetCurGroupFlowType();
 		if(flowType == FT_FLOW)
 			return Flow;
-		
+
 		// otherwise, go with what's asked of use
 		return (groupType == GT_SEQ ? m_seqFmt.get() : m_mapFmt.get());
 	}
-	
+
 	bool EmitterState::SetMapKeyFormat(EMITTER_MANIP value, FMT_SCOPE scope)
 	{
 		switch(value) {
@@ -272,7 +272,7 @@ namespace LHAPDF_YAML
         _Set(m_floatPrecision, value, scope);
         return true;
     }
-    
+
     bool EmitterState::SetDoublePrecision(int value, FMT_SCOPE scope)
     {
         if(value < 0 || value > std::numeric_limits<double>::digits10)
@@ -281,4 +281,3 @@ namespace LHAPDF_YAML
         return true;
     }
 }
-

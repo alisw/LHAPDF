@@ -17,7 +17,7 @@ namespace LHAPDF_YAML
 	{
 	public:
 		Iterator();
-		Iterator(std::auto_ptr<IterPriv> pData);
+		Iterator(std::unique_ptr<IterPriv> pData);
 		Iterator(const Iterator& rhs);
 		~Iterator();
 
@@ -33,7 +33,7 @@ namespace LHAPDF_YAML
 		friend YAML_CPP_API bool operator != (const Iterator& it, const Iterator& jt);
 
 	private:
-		std::auto_ptr<IterPriv> m_pData;
+		std::unique_ptr<IterPriv> m_pData;
 	};
 }
 

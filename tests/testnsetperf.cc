@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
 
   #if LHAPDF_MAJOR_VERSION > 5
   for (int i = 0; i < 3; ++i) {
-    BOOST_FOREACH (const LHAPDF::PDF* pdf, sets[i]) delete pdf;
+    for (const LHAPDF::PDF* pdf : sets[i]) delete pdf;
   }
   #endif
 

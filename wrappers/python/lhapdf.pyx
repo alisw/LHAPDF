@@ -1,6 +1,7 @@
 #cython: embedsignature=True, c_string_type=str, c_string_encoding=utf8
 
 cimport clhapdf as c
+from clhapdf cimport FlavorScheme
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 try:
@@ -8,13 +9,19 @@ try:
 except ImportError: # python 3.x version
     pass
 
+# For some reason this has to be declared again in order for everything to work...
+ctypedef enum FlavorScheme:
+    FIXED, VARIABLE
+
 def text_encode(text):
     if isinstance(text, unicode):
         return text.encode('utf8')
     elif isinstance(text, bytes):
         return text
     else:
-        raise ValueError("requires text input")
+        raise ValueError("Requires text input")
+
+
 
 cdef class PDF:
     """\
@@ -53,7 +60,7 @@ cdef class PDF:
         "Max number of loops involved in this PDF's evolution."
         return self._ptr.orderQCD()
     # Alias
-    qcdOrder = orderQCD
+    #qcdOrder = orderQCD
 
     @property
     def xMin(self):
@@ -90,21 +97,83 @@ cdef class PDF:
         "Return alpha_s at q2"
         return self._ptr.alphasQ2(q2)
 
-    def xfxQ(self, pid, x, q):
-        # TODO: allow 2-arg version without PID which returns a dict for all flavours
-        "Return the PDF xf(x,Q) value for the given parton ID, x, and Q."
-        try:
-            return [self._ptr.xfxQ(pid, x, q) for x, q in zip(x, q)]
-        except TypeError:
-            return self._ptr.xfxQ(pid, x, q)
+    def xfxQ(self, *args):
+        """Return the PDF xf(x,Q2) value for the given parton ID, x, and Q values.
 
-    def xfxQ2(self, pid, x, q2):
-        # TODO: allow 2-arg version without PID which returns a dict for all flavours
-        "Return the PDF xf(x,Q2) value for the given parton ID, x, and Q2."
-        try:
-            return [self._ptr.xfxQ2(pid, x, q2) for x, q2 in zip(x, q2)]
-        except TypeError:
-            return self._ptr.xfxQ2(pid, x, q2)
+        Two forms of arguments are allowed:
+        3-args: (pid, x, q)
+          If all are scalars, a scalar is returned; if pid is a sequence, a list is
+          returned; if x and q are sequences of the same length, they will be zipped
+          and a (maybe nested) list of the return values as for scalar x/q will be returned.
+          If pid is None, behave like the 2-arg version.
+        2-args: (x, q)
+          As for 3 args, but always returning results for all PIDs, as a dict. The return
+          will be many such dicts in a zipped list if x/q are sequences.
+        """
+        # TODO: Is this the most efficient way?
+        # TODO: Reduce duplication between Q and Q2 variants?
+        # If only we'd used PID as the final arg rather than the first, then we could have made it optional/default None...
+        if len(args) == 3:
+            pid, x, q = args
+            if pid is None:
+                return self.xfxQ(x, q)
+            try:
+                try:
+                    return [[self._ptr.xfxQ(eachpid, eachx, eachq) for eachpid in pid] for eachx, eachq in zip(x, q)]
+                except TypeError:
+                    return [self._ptr.xfxQ(pid, eachx, eachq) for eachx, eachq in zip(x, q)]
+            except TypeError:
+                try:
+                    return [self._ptr.xfxQ(eachpid, x, q) for eachpid in pid]
+                except TypeError:
+                    return self._ptr.xfxQ(pid, x, q)
+        elif len(args) == 2:
+            x, q = args
+            try:
+                return [{pid : self._ptr.xfxQ(pid, eachx, eachq) for pid in self.flavors()} for eachx, eachq in zip(x, q)]
+            except TypeError:
+                return {pid : self._ptr.xfxQ(pid, x, q) for pid in self.flavors()}
+        else:
+            raise Exception("Wrong number of arguments given to xfxQ: 2 or 3 required, %d provided" % len(args))
+
+    def xfxQ2(self, *args):
+        """Return the PDF xf(x,Q2) value for the given parton ID, x, and Q2 values.
+
+        Two forms of arguments are allowed:
+        3-args: (pid, x, q2)
+          If all are scalars, a scalar is returned; if pid is a sequence, a list is
+          returned; if x and q2 are sequences of the same length, they will be zipped
+          and a (maybe nested) list of the return values as for scalar x/q2 will be returned.
+          If pid is None, behave like the 2-arg version.
+        2-args: (x, q2)
+          As for 3 args, but always returning results for all PIDs, as a dict. The return
+          will be many such dicts in a zipped list if x/q2 are sequences.
+        """
+        # TODO: Is this the most efficient way?
+        # TODO: Reduce duplication between Q and Q2 variants?
+        # If only we'd used PID as the final arg rather than the first, then we could have made it optional/default None...
+        if len(args) == 3:
+            pid, x, q2 = args
+            if pid is None:
+                return self.xfxQ2(x, q2)
+            try:
+                try:
+                    return [[self._ptr.xfxQ2(eachpid, eachx, eachq2) for eachpid in pid] for eachx, eachq2 in zip(x, q2)]
+                except TypeError:
+                    return [self._ptr.xfxQ2(pid, eachx, eachq2) for eachx, eachq2 in zip(x, q2)]
+            except TypeError:
+                try:
+                    return [self._ptr.xfxQ2(eachpid, x, q2) for eachpid in pid]
+                except TypeError:
+                    return self._ptr.xfxQ2(pid, x, q2)
+        elif len(args) == 2:
+            x, q2 = args
+            try:
+                return [{pid : self._ptr.xfxQ2(pid, eachx, eachq2) for pid in self.flavors()} for eachx, eachq2 in zip(x, q2)]
+            except TypeError:
+                return {pid : self._ptr.xfxQ2(pid, x, q2) for pid in self.flavors()}
+        else:
+            raise Exception("Wrong number of arguments given to xfxQ2: 2 or 3 required, %d provided" % len(args))
 
     def inRangeQ(self, q):
         "Check if the specified Q value is in the unextrapolated range of this PDF."
@@ -339,11 +408,7 @@ cdef class PDFSet:
 
     def _checkPdfType(self, pdftypes):
         """Check that the PdfType of each member matches the ErrorType of the set."""
-        try:
-            self._ptr._checkPdfType(pdftypes)
-        except:
-            return False
-        return True
+        self._ptr._checkPdfType(pdftypes)
 
 
 
@@ -379,79 +444,93 @@ cdef class PDFInfo:
 
 
 
-# cdef class AlphaS:
-#     """\
-#     Interface to alpha_s calculations using various schemes.
-#     """
-#     cdef c.AlphaS* _ptr
-#     cdef set_ptr(self, c.AlphaS* ptr):
-#         self._ptr = ptr
+cdef class AlphaS:
+     """\
+     Interface to alpha_s calculations using various schemes.
+     """
+     cdef c.AlphaS* _ptr
+     cdef set_ptr(self, c.AlphaS* ptr):
+         self._ptr = ptr
 
-#     def __dealloc__(self):
-#         del self._ptr
-#         #pass
+     def __dealloc__(self):
+         del self._ptr
+         #pass
 
-#     def type(self):
-#         "Get the method of alpha_s calculation as a string"
-#         return self._ptr.type()
+     @property
+     def type(self):
+         "Get the method of alpha_s calculation as a string"
+         return self._ptr.type()
 
+     def alphasQ(self, double q):
+         "Get alpha_s value at scale q"
+         return self._ptr.alphasQ(q)
 
-#     def alphasQ(self, double q):
-#         "Get alpha_s value at scale q"
-#         return self._ptr.alphasQ(q)
+     def alphasQ2(self, double q2):
+         "Get alpha_s value at scale q"
+         return self._ptr.alphasQ2(q2)
 
-#     def alphasQ2(self, double q2):
-#         "Get alpha_s value at scale q"
-#         return self._ptr.alphasQ2(q2)
+     def numFlavorsQ(self, double q):
+         "Get number of active flavors at scale q"
+         return self._ptr.numFlavorsQ(q)
 
-#     def numFlavorsQ(self, double q):
-#         "Get number of active flavors at scale q"
-#         return self._ptr.numFlavorsQ(q)
+     def numFlavorsQ2(self, double q2):
+         "Get number of active flavors at scale q"
+         return self._ptr.numFlavorsQ2(q2)
 
-#     def numFlavorsQ2(self, double q2):
-#         "Get number of active flavors at scale q"
-#         return self._ptr.numFlavorsQ2(q2)
+     def quarkMass(self, int id):
+         "Get mass of quark with PID code id"
+         return self._ptr.quarkMass(id)
 
-#     def quarkMass(self, int id):
-#         "Get mass of quark with PID code id"
-#         return self._ptr.quarkMass(id)
+     def setQuarkMass(self, int id, double value):
+         "Set mass of quark with PID code id"
+         self._ptr.setQuarkMass(id, value)
 
-#     def setQuarkMass(self, int id, double value):
-#         "Set mass of quark with PID code id"
-#         self._ptr.setQuarkMass(id, value)
+     def quarkThreshold(self, int id):
+         "Get activation threshold of quark with PID code id"
+         return self._ptr.quarkThreshold(id)
 
-#     def quarkThreshold(self, int id):
-#         "Get activation threshold of quark with PID code id"
-#         return self._ptr.quarkThreshold(id)
+     def setQuarkThreshold(self, int id, double value):
+         "Set activation threshold of quark with PID code id"
+         self._ptr.setQuarkThreshold(id, value)
 
-#     def setQuarkThreshold(self, int id, double value):
-#         "Set activation threshold of quark with PID code id"
-#         self._ptr.setQuarkThreshold(id, value)
+     def orderQCD(self):
+         "Get the QCD running order (max num loops) for this alphaS"
+         return self._ptr.orderQCD()
 
-#     def orderQCD(self):
-#         "Get the QCD running order (max num loops) for this alphaS"
-#         return self._ptr.orderQCD()
+     def setOrderQCD(self, int order):
+         "Set the QCD running order (max num loops) for this alphaS"
+         self._ptr.setOrderQCD(order)
 
-#     def setOrderQCD(self, int order):
-#         "Set the QCD running order (max num loops) for this alphaS"
-#         self._ptr.setOrderQCD(order)
+     def setMZ(self, double mz):
+         "Set the Z mass (used in ODE solver)"
+         self._ptr.setMZ(mz)
 
-#     def setMZ(self, double mz):
-#         "Set the Z mass (used in ODE solver)"
-#         self._ptr.setMZ(mz)
+     def setAlphaSMZ(self, double alphas):
+         "Set alpha_s at the Z mass (used in ODE solver)"
+         self._ptr.setAlphaSMZ(alphas)
 
-#     def setAlphaSMZ(self, double alphas):
-#         "Set alpha_s at the Z mass (used in ODE solver)"
-#         self._ptr.setAlphaSMZ(alphas)
+     def setLambda(self, int id, double val):
+         "Set the id'th LambdaQCD value (used in analytic solver)"
+         self._ptr.setLambda(id, val)
 
-#     def setLambda(self, int id, double val):
-#         "Set the id'th LambdaQCD value (used in analytic solver)"
-#         self._ptr.setLambda(id, val)
-
-#     # enum FlavorScheme { FIXED, VARIABLE };
-#     # void setFlavorScheme(self, FlavorScheme scheme, int nf)
-#     # FlavorScheme flavorScheme(self)
-
+     def setFlavorScheme(self, scheme, int nf):
+         "Set the flavor scheme. nf is the fixed number (if FIXED)"
+         "or the max number (if VARIABLE)"
+         cdef FlavorScheme s
+         if scheme == "VARIABLE":
+           s = VARIABLE
+         elif scheme == "FIXED":
+           s = FIXED
+         else:
+           print "You can only set the flavor scheme to FIXED or VARIABLE"
+           return
+         self._ptr.setFlavorScheme(s,nf)
+     def flavorScheme(self):
+         cdef FlavorScheme s = self._ptr.flavorScheme()
+         if int(s) == 0:
+           print "FIXED"
+         if int(s) == 1:
+           print "VARIABLE"
 
 
 def getConfig():
@@ -460,7 +539,6 @@ def getConfig():
     cdef Info obj = Info.__new__(Info)
     obj.set_ptr(ptr)
     return obj
-
 
 def getPDFSet(setname):
     """Factory function to get the specified PDF set."""
@@ -499,6 +577,30 @@ cdef mkPDF_setmemstr(string setname_nmem):
     obj.set_ptr(c.mkPDF(setname_nmem))
     return obj
 
+cdef mkAlphaS_setmem(string setname, int memid):
+    "Factory function to make a AlphaS object from the set name and member number."
+    cdef AlphaS obj = AlphaS.__new__(AlphaS)
+    obj.set_ptr(c.mkAlphaS(setname, memid))
+    return obj
+
+cdef mkAlphaS_lhaid(int lhaid):
+    "Factory function to make a AlphaS object from the LHAPDF ID number."
+    cdef AlphaS obj = AlphaS.__new__(AlphaS)
+    obj.set_ptr(c.mkAlphaS(lhaid))
+    return obj
+
+cdef mkAlphaS_setmemstr(string setname_nmem):
+    "Factory function to make a AlphaS object from the set name and member number in SETNAME/NMEM string format."
+    cdef AlphaS obj = AlphaS.__new__(AlphaS)
+    obj.set_ptr(c.mkAlphaS(setname_nmem))
+    return obj
+
+cdef mkBareAlphaS_(string as_type):
+    "Factory function to make an AlphaS object without a PDF reference."
+    cdef AlphaS obj = AlphaS.__new__(AlphaS)
+    obj.set_ptr(c.mkBareAlphaS(as_type))
+    return obj
+
 def mkPDF(*args):
     """Factory function to make a PDF object from the set name and member number
     (2 args), the unique LHAPDF ID number for that member (1 int arg), or the
@@ -516,6 +618,26 @@ def mkPDF(*args):
     else:
         raise Exception("Unknown call signature")
 
+def mkAlphaS(*args):
+    """Factory function to make a AlphaS object from the set name and member number
+    (2 args), the unique LHAPDF ID number for that member (1 int arg), or the
+    SETNAME/NMEM string format."""
+    cdef string arg0_string
+    if len(args) == 1:
+        if type(args[0]) == int:
+            return mkAlphaS_lhaid(args[0])
+        if type(args[0]) == str:
+            arg0_string = text_encode(args[0])
+            return mkAlphaS_setmemstr(arg0_string)
+    elif len(args) == 2 and type(args[0]) == str and type(args[1]) == int:
+        arg0_string = text_encode(args[0])
+        return mkAlphaS_setmem(arg0_string, args[1])
+    else:
+        raise Exception("Unknown call signature")
+
+def mkBareAlphaS(as_type):
+    "Factory function to make a bare AlphaS object."
+    return mkBareAlphaS_(as_type)
 
 
 def weightxQ(int id, double x, double Q, PDF basepdf, PDF newpdf, aschk=5e-2):

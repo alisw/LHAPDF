@@ -1,3 +1,77 @@
+2017-09-05  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Version 6.2.1!
+
+2017-09-04  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Fix signed/unsigned comparison in Fortran interface.
+
+2017-08-31  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Fix ccstr_to_fstr function, and hence several problems in the LHAGlue Fortran interface.
+
+2017-08-28  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Use lhapdf Python module in lhapdf script, to avoid YAML-parsing problems.
+
+2017-08-27  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Extend Python xfxQ and xfxQ2 functions to allow multiple PID
+	values and 2-arg versions which return all PIDs.
+
+2017-08-25  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Make alphaS, interpolator, and extrapolator setting eager rather than lazy.
+
+	* Remove unique_ptr from the public PDF.h header for now, for C++98 API compatibility.
+
+2017-08-10  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Eliminate C++11 features from headers, and moving some oversized inlines into .cc files.
+
+2017-07-13  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Version 6.2.0 release.
+
+2017-07-11  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Add warning printouts and some verbosity control to the LHAGlue Fortran setlhaparm function.
+
+2017-07-09  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Provide lookupPDF and lookupLHAPDFID functions accepting a single setname/mem string.
+
+	* Finally removed Boost multi_array... and it was sooooo easy. Sorry for the delay! Validated.
+
+2016-08-17  Andy Buckley  <andy.buckley@cern.ch>
+
+	* All Boost usage removed except multi_array.
+
+	* Propagate C++11 compiler definition to Cython build and lhapdf-config; add --cxx flag to lhapdf-config.
+
+2016-08-16  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Add normal and chi-squared quantile functions, and incomplete
+	gamma functions, extracted and converted by Graeme Watt based on
+	ROOT and Cephes code.
+
+	* Require C++11, and starting to remove Boost.
+
+2016-02-16  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Add x-grouped xf vs Q plots to plotpdfs, and allow the user to
+	control which plot groups to make.
+
+2016-02-09  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Improvements to plotpdfs script.
+
+	* Move scripts for installation into a bin directory.
+
+2016-02-08  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Corrections in the lhapdf manager script for Python3 compatibility. Thanks to Frank Siegert.
+
 2015-12-22  Andy Buckley  <andy.buckley@cern.ch>
 
 	* Version 6.1.6 release!

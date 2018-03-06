@@ -1,29 +1,30 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2014 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/Paths.h"
 #include "LHAPDF/Info.h"
 #include "LHAPDF/Config.h"
+#include <dirent.h>
 
 namespace LHAPDF {
 
 
   std::vector<std::string> paths() {
-    vector<string> rtn;
     // Use LHAPDF_DATA_PATH for all path storage
     char* pathsvar = getenv("LHAPDF_DATA_PATH");
     // But fall back to looking in LHAPATH if the preferred var is not defined
     if (pathsvar == 0) pathsvar = getenv("LHAPATH");
+    const string spathsvar = (pathsvar != 0) ? pathsvar : "";
     // Split the paths variable as usual
-    if (pathsvar != 0) split(rtn, pathsvar, is_any_of(":"), token_compress_on);
+    vector<string> rtn = split(spathsvar, ":");
     // Look in the install prefix after other paths are exhausted, if not blocked by a trailing ::
-    if (pathsvar == 0 || strlen(pathsvar) < 2 || string(pathsvar).substr(strlen(pathsvar)-2) != "::") {
-      const string datadir = LHAPDF_DATA_PREFIX;
-      rtn.push_back(datadir / "LHAPDF");
+    if (spathsvar.length() < 2 || spathsvar.substr(spathsvar.length()-2) != "::") {
+      const string datadir = string(LHAPDF_DATA_PREFIX) / "LHAPDF";
+      rtn.push_back(datadir );
     }
-   return rtn;
+    return rtn;
   }
 
 
@@ -34,8 +35,8 @@ namespace LHAPDF {
 
   string findFile(const string& target) {
     if (target.empty()) return "";
-    BOOST_FOREACH (const string& base, paths()) {
-      const string p = startswith(target, "/") ? target : base / target;
+    for (const string& base : paths()) {
+      const string p = (startswith(target, "/") || startswith(target, ".")) ? target : base / target;
       // if (verbosity() > 2) cout << "Trying file: " << p << endl;
       if (file_exists(p)) {
         // if (verbosity() > 1) cout << "Found file: " << p << endl;
@@ -52,7 +53,7 @@ namespace LHAPDF {
     // Return cached list if valid
     if (!rtn.empty()) return rtn;
     // Otherwise this is the first time: populate the list
-    BOOST_FOREACH (const string& p, paths()) {
+    for (const string& p : paths()) {
       if (!dir_exists(p)) continue;
       DIR* dir;
       struct dirent* ent;

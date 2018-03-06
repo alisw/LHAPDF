@@ -102,7 +102,7 @@ namespace LHAPDF_YAML
 		// *****
 		// And now branch based on the next few characters!
 		// *****
-		
+
 		// end of stream
 		if(!INPUT)
 			return EndStream();
@@ -123,7 +123,7 @@ namespace LHAPDF_YAML
 
 		if(INPUT.peek() == Keys::FlowSeqEnd || INPUT.peek() == Keys::FlowMapEnd)
 			return ScanFlowEnd();
-	
+
 		if(INPUT.peek() == Keys::FlowEntry)
 			return ScanFlowEntry();
 
@@ -224,7 +224,7 @@ namespace LHAPDF_YAML
 	{
 		if(InBlockContext())
 			return Exp::Value();
-		
+
 		return m_canBeJSONFlow ? Exp::ValueInJSONFlow() : Exp::ValueInFlow();
 	}
 
@@ -234,8 +234,8 @@ namespace LHAPDF_YAML
 	{
 		m_startedStream = true;
 		m_simpleKeyAllowed = true;
-		std::auto_ptr<IndentMarker> pIndent(new IndentMarker(-1, IndentMarker::NONE));
-		m_indentRefs.push_back(pIndent);
+		std::unique_ptr<IndentMarker> pIndent(new IndentMarker(-1, IndentMarker::NONE));
+		m_indentRefs.push_back(std::move(pIndent));
 		m_indents.push(&m_indentRefs.back());
 	}
 
@@ -280,8 +280,8 @@ namespace LHAPDF_YAML
 		// are we in flow?
 		if(InFlowContext())
 			return 0;
-		
-		std::auto_ptr<IndentMarker> pIndent(new IndentMarker(column, type));
+
+		std::unique_ptr<IndentMarker> pIndent(new IndentMarker(column, type));
 		IndentMarker& indent = *pIndent;
 		const IndentMarker& lastIndent = *m_indents.top();
 
@@ -296,7 +296,7 @@ namespace LHAPDF_YAML
 
 		// and then the indent
 		m_indents.push(&indent);
-		m_indentRefs.push_back(pIndent);
+		m_indentRefs.push_back(std::move(pIndent));
 		return &m_indentRefs.back();
 	}
 
@@ -317,14 +317,14 @@ namespace LHAPDF_YAML
 				break;
 			if(indent.column == INPUT.column() && !(indent.type == IndentMarker::SEQ && !Exp::BlockEntry().Matches(INPUT)))
 				break;
-				
+
 			PopIndent();
 		}
-		
+
 		while(!m_indents.empty() && m_indents.top()->status == IndentMarker::INVALID)
 			PopIndent();
 	}
-	
+
 	// PopAllIndents
 	// . Pops all indentations (except for the base empty one) off the stack,
 	//   and enqueues the proper token each time.
@@ -339,11 +339,11 @@ namespace LHAPDF_YAML
 			const IndentMarker& indent = *m_indents.top();
 			if(indent.type == IndentMarker::NONE)
 				break;
-			
+
 			PopIndent();
 		}
 	}
-	
+
 	// PopIndent
 	// . Pops a single indent, pushing the proper token
 	void Scanner::PopIndent()
@@ -355,7 +355,7 @@ namespace LHAPDF_YAML
 			InvalidateSimpleKey();
 			return;
 		}
-		
+
 		if(indent.type == IndentMarker::SEQ)
 			m_tokens.push(Token(Token::BLOCK_SEQ_END, INPUT.mark()));
 		else if(indent.type == IndentMarker::MAP)
@@ -384,4 +384,3 @@ namespace LHAPDF_YAML
 		throw ParserException(mark, msg);
 	}
 }
-

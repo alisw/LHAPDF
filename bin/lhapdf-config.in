@@ -22,6 +22,7 @@ if [[ $# -eq 0 || -n $( echo $* | egrep -- "--help|-h" ) ]]; then
     echo "  --libdir      : show the path to the LHAPDF library directory"
     echo "  --datadir     : show the path to the LHAPDF data directory"
     echo
+    echo "  --cxx         : get compiler (including -std=c++11 flag or equiv)"
     echo "  --cflags      : get compiler flags (aka --cppflags|--cxxflags)"
     echo "  --libs        : get linker flags (aka --ldflags)"
     echo
@@ -36,8 +37,11 @@ test -n "$tmp" && OUT="$OUT @prefix@"
 tmp=$( echo "$*" | egrep -- '--\<incdir\>')
 test -n "$tmp" && OUT="$OUT @includedir@"
 
+tmp=$( echo "$*" | egrep -- '--\<cxx\>')
+test -n "$tmp" && OUT="$OUT @LHAPDF_CXX@"
+
 tmp=$( echo "$*" | egrep -- '--\<cflags|cppflags|cxxflags\>')
-test -n "$tmp" && OUT="$OUT -I@includedir@ @BOOST_CPPFLAGS@"
+test -n "$tmp" && OUT="$OUT @LHAPDF_CXXFLAGS@ -I@includedir@"
 
 tmp=$( echo "$*" | egrep -- '--\<libdir\>')
 test -n "$tmp" && OUT="$OUT @libdir@"

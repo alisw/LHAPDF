@@ -3,6 +3,7 @@ from libcpp.map cimport map
 from libcpp.vector cimport vector
 from libcpp cimport bool
 
+
 cdef extern from "../../include/LHAPDF/Version.h" namespace "LHAPDF":
     cdef string version()
 
@@ -76,6 +77,11 @@ cdef extern from "../../include/LHAPDF/PDFSet.h" namespace "LHAPDF":
         double randomValueFromHessian(vector[double]&, vector[double]&, bool) except +
         void _checkPdfType(vector[string]&) except +
 
+cdef extern from "../../include/LHAPDF/AlphaS.h" namespace "LHAPDF::AlphaS":
+    ctypedef enum FlavorScheme:
+        FIXED
+        VARIABLE
+
 cdef extern from "../../include/LHAPDF/AlphaS.h" namespace "LHAPDF":
     cdef cppclass AlphaS:
         string type() except +
@@ -84,18 +90,16 @@ cdef extern from "../../include/LHAPDF/AlphaS.h" namespace "LHAPDF":
         int numFlavorsQ(double q) except +
         int numFlavorsQ2(double q2) except +
         double quarkMass(int id) except +
-        # void setQuarkMass(int id, double value) except +
+        void setQuarkMass(int id, double value) except +
         double quarkThreshold(int id) except +
-        # void setQuarkThreshold(int id, double val) except +
+        void setQuarkThreshold(int id, double val) except +
         int orderQCD() except +
-        # void setOrderQCD(int order) except +
-        # void setMZ(double mz) except +
-        # void setAlphaSMZ(double alphas) except +
-        # void setLambda(unsigned int, double) except +
-        # cdef enum FlavorScheme:
-        #     FIXED, VARIABLE
-        # void setFlavorScheme(FlavorScheme scheme, int nf) except +
-        # FlavorScheme flavorScheme() except +
+        void setOrderQCD(int order) except +
+        void setMZ(double mz) except +
+        void setAlphaSMZ(double alphas) except +
+        void setLambda(unsigned int, double) except +
+        void setFlavorScheme(FlavorScheme scheme, int nf) except +
+        FlavorScheme flavorScheme() except +
 
 cdef extern from "../../include/LHAPDF/PDFSet.h" namespace "LHAPDF":
     cdef struct PDFUncertainty:
@@ -120,7 +124,10 @@ cdef extern from "../../include/LHAPDF/Factories.h" namespace "LHAPDF":
     cdef PDF* mkPDF(string) except +
     cdef PDF* mkPDF(string, int) except +
     cdef PDF* mkPDF(int) except +
-    #cdef AlphaS* mkAlphaS(string) except +
+    cdef AlphaS* mkAlphaS(string) except +
+    cdef AlphaS* mkAlphaS(int) except +
+    cdef AlphaS* mkAlphaS(string, int) except +
+    cdef AlphaS* mkBareAlphaS(string) except +
 
 cdef extern from "../../include/LHAPDF/Reweighting.h" namespace "LHAPDF":
     cdef double weightxQ2(int id, double x, double Q2, PDF& basepdf, PDF& newpdf, double aschk)

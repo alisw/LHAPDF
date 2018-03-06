@@ -34,8 +34,8 @@ program example1
      print *,'xmin=',xmin,' xmax=',xmax,' Q2min=',q2min,' Q2max=',q2max
      call GetMinMax(i,xmin,xmax,q2min,q2max)
      print *,'xmin=',xmin,' xmax=',xmax,' Q2min=',q2min,' Q2max=',q2max
-     call setlhaparm('EXTRAPOLATE')
-     call getlhaparm(18,lparm)
+     call setlhaparm('EXTRAPOLATE') !< These work, but have no effect
+     call getlhaparm(18,lparm) !< These work, but have no effect
      print *,'lhaparm(18)=',lparm
      write(*,*)
      a=alphasPDF(QMZ)

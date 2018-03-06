@@ -21,7 +21,7 @@ namespace LHAPDF_YAML
 	class EventHandler;
 	class Node;
 	class Scanner;
-	
+
 	class SingleDocParser: private noncopyable
 	{
 	public:
@@ -32,32 +32,32 @@ namespace LHAPDF_YAML
 
 	private:
 		void HandleNode(EventHandler& eventHandler);
-		
+
 		void HandleSequence(EventHandler& eventHandler);
 		void HandleBlockSequence(EventHandler& eventHandler);
 		void HandleFlowSequence(EventHandler& eventHandler);
-		
+
 		void HandleMap(EventHandler& eventHandler);
 		void HandleBlockMap(EventHandler& eventHandler);
 		void HandleFlowMap(EventHandler& eventHandler);
 		void HandleCompactMap(EventHandler& eventHandler);
 		void HandleCompactMapWithNoKey(EventHandler& eventHandler);
-		
+
 		void ParseProperties(std::string& tag, anchor_t& anchor);
 		void ParseTag(std::string& tag);
 		void ParseAnchor(anchor_t& anchor);
-		
+
 		anchor_t RegisterAnchor(const std::string& name);
 		anchor_t LookupAnchor(const Mark& mark, const std::string& name) const;
-		
+
 	private:
 		Scanner& m_scanner;
 		const Directives& m_directives;
-		std::auto_ptr<CollectionStack> m_pCollectionStack;
-		
+		std::unique_ptr<CollectionStack> m_pCollectionStack;
+
 		typedef std::map<std::string, anchor_t> Anchors;
 		Anchors m_anchors;
-		
+
 		anchor_t m_curAnchor;
 	};
 }

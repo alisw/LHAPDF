@@ -1,14 +1,13 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2014 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_KnotArray_H
 #define LHAPDF_KnotArray_H
 
 #include "LHAPDF/Exceptions.h"
-#include "boost/multi_array.hpp"
 
 namespace LHAPDF {
 
@@ -20,55 +19,27 @@ namespace LHAPDF {
   class KnotArray1F {
   public:
 
-    /// Use the Boost multi_array for efficiency and ease of indexing
-    typedef boost::multi_array<double, 2> valarray;
-
-
     /// @name Construction etc.
     //@{
 
     /// Default constructor just for std::map insertability
     KnotArray1F() {}
 
-    /// Constructor from x and Q2 knot values, and an xf value grid
-    KnotArray1F(const std::vector<double>& xknots, const std::vector<double>& q2knots, const valarray& xfs)
+    /// Constructor from x and Q2 knot values, and an xf value grid as strided list
+    KnotArray1F(const std::vector<double>& xknots, const std::vector<double>& q2knots, const std::vector<double>& xfs)
       : _xs(xknots), _q2s(q2knots), _xfs(xfs)
     {
-      assert(_xfs.shape()[0] == xknots.size() && _xfs.shape()[1] == q2knots.size());
-      _sync();
+      assert(_xfs.size() == size());
+      _synclogs();
     }
 
-    /// Constructor from x and Q2 knot values
+    /// Constructor of a zero-valued array from x and Q2 knot values
     KnotArray1F(const std::vector<double>& xknots, const std::vector<double>& q2knots)
       : _xs(xknots), _q2s(q2knots),
-        _xfs(boost::extents[xknots.size()][q2knots.size()])
+        _xfs(size(), 0.0)
     {
-      assert(_xfs.shape()[0] == xknots.size() && _xfs.shape()[1] == q2knots.size());
-      _sync();
-    }
-
-    /// Constructor from another KnotArray1F
-    ///
-    /// An explicit copy constructor is needed due to the Boost multi_array copy semantics
-    KnotArray1F(const KnotArray1F& other)
-      : _xs(other._xs), _q2s(other._q2s),
-        _logxs(other._logxs), _logq2s(other._logq2s)
-    {
-      _xfs.resize(boost::extents[other._xfs.shape()[0]][other._xfs.shape()[1]]);
-      _xfs = other._xfs;
-      assert(_xfs.shape()[0] == _xs.size() && _xfs.shape()[1] == _q2s.size());
-    }
-
-    /// An explicit operator= is needed due to the Boost multi_array copy semantics
-    KnotArray1F& operator=(const KnotArray1F& other) {
-      _xs = other._xs;
-      _q2s = other._q2s;
-      _logxs = other._logxs;
-      _logq2s = other._logq2s;
-      _xfs.resize(boost::extents[other._xfs.shape()[0]][other._xfs.shape()[1]]);
-      _xfs = other._xfs;
-      assert(_xfs.shape()[0] == _xs.size() && _xfs.shape()[1] == _q2s.size());
-      return *this;
+      assert(_xfs.size() == size());
+      _synclogs();
     }
 
     //@}
@@ -78,7 +49,15 @@ namespace LHAPDF {
     //@{
 
     /// x knot setter
-    void setxs(const std::vector<double>& xs) { _xs = xs; _xfs.resize(boost::extents[_xs.size()][_q2s.size()]); }
+    /// @note Also zeros the xfs array, which is invalidated by resetting the x knots
+    void setxs(const std::vector<double>& xs) {
+      _xs = xs;
+      _synclogs();
+      _xfs = std::vector<double>(size(), 0.0);
+    }
+
+    /// Number of x knots
+    const size_t xsize() const { return _xs.size(); }
 
     /// x knot accessor
     const std::vector<double>& xs() const { return _xs; }
@@ -107,7 +86,15 @@ namespace LHAPDF {
     //@{
 
     /// Q2 knot setter
-    void setq2s(const std::vector<double>& q2s) { _q2s = q2s; _xfs.resize(boost::extents[_xs.size()][_q2s.size()]); }
+    /// @note Also zeros the xfs array, which is invalidated by resetting the Q2 knots
+    void setq2s(const std::vector<double>& q2s) {
+      _q2s = q2s;
+      _synclogs();
+      _xfs = std::vector<double>(size(), 0.0);
+    }
+
+    /// Number of Q2 knots
+    const size_t q2size() const { return _q2s.size(); }
 
     /// Q2 knot accessor
     const std::vector<double>& q2s() const { return _q2s; }
@@ -135,16 +122,18 @@ namespace LHAPDF {
     /// @name PDF values at (x, Q2) points
     //@{
 
+    /// Number of x knots
+    const size_t size() const { return xsize()*q2size(); }
+
     /// xf value accessor (const)
-    const valarray& xfs() const { return _xfs; }
+    const std::vector<double>& xfs() const { return _xfs; }
     /// xf value accessor (non-const)
-    valarray& xfs() { return _xfs; }
+    std::vector<double>& xfs() { return _xfs; }
     /// xf value setter
-    void setxfs(const valarray& xfs) { _xfs = xfs; }
+    void setxfs(const std::vector<double>& xfs) { _xfs = xfs; }
 
     /// Get the xf value at a particular indexed x,Q2 knot
-    /// @todo Reverse the order of lookup here to reverse the order of x and Q2 strides in the data file
-    const double& xf(size_t ix, size_t iq2) const { return _xfs[ix][iq2]; }
+    const double& xf(size_t ix, size_t iq2) const { return _xfs[ix*q2size() + iq2]; }
 
     //@}
 
@@ -152,7 +141,7 @@ namespace LHAPDF {
   private:
 
     /// Synchronise log(x) and log(Q2) arrays from the x and Q2 ones
-    void _sync() {
+    void _synclogs() {
       _logxs.resize(_xs.size());
       _logq2s.resize(_q2s.size());
       for (size_t i = 0; i < _xs.size(); ++i) _logxs[i] = log(_xs[i]);
@@ -167,8 +156,8 @@ namespace LHAPDF {
     std::vector<double> _logxs;
     /// List of log(Q2) knots
     std::vector<double> _logq2s;
-    /// List of xf values across the knot array
-    valarray _xfs;
+    /// List of xf values across the 2D knot array, stored as a strided [ix][iQ2] 1D array
+    std::vector<double> _xfs;
 
   };
 
@@ -247,7 +236,7 @@ namespace LHAPDF {
     AlphaSArray(const std::vector<double>& q2knots, const std::vector<double>& as)
       : _q2s(q2knots), _as(as)
     {
-      _sync();
+      _synclogs();
     }
 
     //@}
@@ -256,20 +245,11 @@ namespace LHAPDF {
     /// @name Q2 stuff
     //@{
 
-    // /// Q2 knot setter
-    // void setq2s(const std::vector<double>& q2s) { _q2s = q2s; _xfs.resize(boost::extents[_xs.size()][_q2s.size()]); }
-
     /// Q2 knot vector accessor
     const std::vector<double>& q2s() const { return _q2s; }
 
-    // /// Get the Q2 value at a particular indexed Q2 knot
-    // const double& q2(size_t iq2) const { return _q2s[iq2]; }
-
     /// log(Q2) knot vector accessor
     const std::vector<double>& logq2s() const { return _logq2s; }
-
-    // /// Get the log(Q2) value at a particular indexed Q2 knot
-    // const double& logq2(size_t iq2) const { return _logq2s[iq2]; }
 
     /// Get the index of the closest Q2 knot row <= q2
     ///
@@ -312,9 +292,6 @@ namespace LHAPDF {
     // /// alpha_s value setter
     // void setalphas(const valarray& xfs) { _as = as; }
 
-    // /// Get the alpha_s value at a particular indexed Q2 knot
-    // const double& alpha(size_t iq2) const { return _as[iq2]; }
-
     //@}
 
 
@@ -342,7 +319,7 @@ namespace LHAPDF {
   private:
 
     /// Synchronise the log(Q2) array from the Q2 one
-    void _sync() {
+    void _synclogs() {
       _logq2s.resize(_q2s.size());
       for (size_t i = 0; i < _q2s.size(); ++i) _logq2s[i] = log(_q2s[i]);
     }

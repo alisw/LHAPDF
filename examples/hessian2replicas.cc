@@ -3,14 +3,16 @@
 // Extended version of http://mstwpdf.hepforge.org/random/conversion.C.
 
 #include "LHAPDF/LHAPDF.h"
-#include <boost/random.hpp>
+#include <random>
 using namespace std;
 
 // Function to convert Hessian "set" to replica set with name "randsetname"
 // in directory "randdir" (default: current directory) using "seed" for
 // random number generator with "nrep" replica PDF members and an option
 // to "symmetrise" the Hessian predictions if they are asymmetric.
-void convertHessianToReplicas(const LHAPDF::PDFSet& set, const string& randsetname, const unsigned& seed, const unsigned& nrep, const string& randdir=".", const bool& symmetrise=true);
+void convertHessianToReplicas(const LHAPDF::PDFSet& set, const string& randsetname,
+                              const unsigned& seed, const unsigned& nrep,
+                              const string& randdir=".", const bool& symmetrise=true);
 
 
 int main(int argc, char* argv[]) {
@@ -24,8 +26,8 @@ int main(int argc, char* argv[]) {
 
   const string setname = argv[1];
   const string strseed = argv[2];
-  const unsigned seed = boost::lexical_cast<unsigned>(strseed);
-  const unsigned nrep = boost::lexical_cast<unsigned>(argv[3]);
+  const unsigned seed = LHAPDF::lexical_cast<unsigned>(strseed);
+  const unsigned nrep = LHAPDF::lexical_cast<unsigned>(argv[3]);
 
   const LHAPDF::PDFSet set(setname);
 
@@ -172,7 +174,7 @@ void convertHessianToReplicas(const LHAPDF::PDFSet& set, const string& randsetna
   }
   string line;
   while (getline(infile, line)) {
-    boost::algorithm::trim(line);
+    LHAPDF::trim(line);
     if (LHAPDF::contains(line, "SetDesc")) {
       outfile << "SetDesc: \"Based on original " << set.name() << ".  This set has " << nrep+1 << " member PDFs.  mem=0 => average over " << nrep << " random PDFs; mem=1-" << nrep << " => " << nrep << " random PDFs generated using ";
       if (symmetrise) {
@@ -221,7 +223,7 @@ void convertHessianToReplicas(const LHAPDF::PDFSet& set, const string& randsetna
     int iblock(0), iblockline(0), iline(0);
     double token;
     while (getline(infile, line)) {
-      boost::algorithm::trim(line);
+      LHAPDF::trim(line);
       iline += 1;
       // If the line is commented out, increment the line number but not the block line.
       if (line.find("#") == 0) continue;
@@ -324,11 +326,8 @@ void convertHessianToReplicas(const LHAPDF::PDFSet& set, const string& randsetna
   const vector<LHAPDF::PDF*> pdfs = set.mkPDFs();
 
   // Initialise Gaussian random number generator.
-  boost::mt19937 rng(seed); // seed passed as argument
-  boost::normal_distribution<> nd; // mean 0.0, s.d. = 1.0
-  boost::variate_generator<boost::mt19937&, boost::normal_distribution<> > var_nor(rng, nd);
-  //C++11: default_random_engine generator(seed); // seed passed as argument
-  //C++11: normal_distribution<double> distribution; // mean 0.0, s.d. = 1.0
+  default_random_engine generator(seed); // seed passed as argument
+  normal_distribution<double> distribution; // mean 0.0, s.d. = 1.0
 
   // Calculate the mean over all replicas.  First initialise everything to zero.
   double alphasMZmean = 0.0;
@@ -360,8 +359,7 @@ void convertHessianToReplicas(const LHAPDF::PDFSet& set, const string& randsetna
     vector<double> randoms;
     if (irep > 0) {
       for (int ieigen=1; ieigen <= neigen; ieigen++) {
-        double r = var_nor(); // using Boost
-        //C++11: double r = distribution(generator); // using C++11
+        const double r = distribution(generator);
         randoms.push_back(r);
         //randoms.push_back(0.0); // for testing purposes (all replicas equal best-fit)
       }

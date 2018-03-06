@@ -40,7 +40,7 @@ namespace LHAPDF_YAML
 		m_seqData.clear();
 		m_mapData.clear();
 	}
-	
+
 	bool Node::IsAliased() const
 	{
 		return m_pOwnership->IsAliased(*this);
@@ -51,9 +51,9 @@ namespace LHAPDF_YAML
 		return m_pOwnership->Create();
 	}
 
-	std::auto_ptr<Node> Node::Clone() const
+	std::unique_ptr<Node> Node::Clone() const
 	{
-		std::auto_ptr<Node> pNode(new Node);
+		std::unique_ptr<Node> pNode(new Node);
 		NodeBuilder nodeBuilder(*pNode);
 		EmitEvents(nodeBuilder);
 		return pNode;
@@ -76,11 +76,11 @@ namespace LHAPDF_YAML
 				eventHandler.OnAlias(m_mark, anchor);
 				return;
 			}
-			
+
 			am.RegisterReference(*this);
 			anchor = am.LookupAnchor(*this);
 		}
-		
+
 		switch(m_type) {
 			case NodeType::Null:
 				eventHandler.OnNull(m_mark, anchor);
@@ -117,7 +117,7 @@ namespace LHAPDF_YAML
 	{
 		m_pOwnership->MarkAsAliased(*this);
 	}
-	
+
 	void Node::SetScalarData(const std::string& data)
 	{
 		assert(m_type == NodeType::Scalar); // TODO: throw?
@@ -129,7 +129,7 @@ namespace LHAPDF_YAML
 		assert(m_type == NodeType::Sequence); // TODO: throw?
 		m_seqData.push_back(&node);
 	}
-	
+
 	void Node::Insert(Node& key, Node& value)
 	{
 		assert(m_type == NodeType::Map); // TODO: throw?
@@ -145,11 +145,11 @@ namespace LHAPDF_YAML
 			case NodeType::Scalar:
 				return Iterator();
 			case NodeType::Sequence:
-				return Iterator(std::auto_ptr<IterPriv>(new IterPriv(m_seqData.begin())));
+				return Iterator(std::unique_ptr<IterPriv>(new IterPriv(m_seqData.begin())));
 			case NodeType::Map:
-				return Iterator(std::auto_ptr<IterPriv>(new IterPriv(m_mapData.begin())));
+				return Iterator(std::unique_ptr<IterPriv>(new IterPriv(m_mapData.begin())));
 		}
-		
+
 		assert(false);
 		return Iterator();
 	}
@@ -163,11 +163,11 @@ namespace LHAPDF_YAML
 			case NodeType::Scalar:
 				return Iterator();
 			case NodeType::Sequence:
-				return Iterator(std::auto_ptr<IterPriv>(new IterPriv(m_seqData.end())));
+				return Iterator(std::unique_ptr<IterPriv>(new IterPriv(m_seqData.end())));
 			case NodeType::Map:
-				return Iterator(std::auto_ptr<IterPriv>(new IterPriv(m_mapData.end())));
+				return Iterator(std::unique_ptr<IterPriv>(new IterPriv(m_mapData.end())));
 		}
-		
+
 		assert(false);
 		return Iterator();
 	}
@@ -186,7 +186,7 @@ namespace LHAPDF_YAML
 			case NodeType::Map:
 				return m_mapData.size();
 		}
-		
+
 		assert(false);
 		return 0;
 	}
@@ -211,7 +211,7 @@ namespace LHAPDF_YAML
 			case NodeType::Map:
 				return false;
 		}
-		
+
 		assert(false);
 		return false;
 	}
@@ -227,7 +227,7 @@ namespace LHAPDF_YAML
 	{
 		if(m_type != rhs.m_type)
 			return rhs.m_type - m_type;
-		
+
 		switch(m_type) {
 			case NodeType::Null:
 				return 0;
@@ -257,7 +257,7 @@ namespace LHAPDF_YAML
 				}
 				return 0;
 		}
-		
+
 		assert(false);
 		return 0;
 	}

@@ -11,8 +11,7 @@ The source files can be downloaded from https://www.hepforge.org/downloads/lhapd
 
 @section quickstart Quick start instructions
 
-If you have a C++ compiler and the Boost C++ library+headers installed in system
-paths, building LHAPDF should be straightforward:
+If you have a C++11 compiler, building LHAPDF >= 6.2 should be straightforward:
 
     wget http://www.hepforge.org/archive/lhapdf/LHAPDF-6.X.Y.tar.gz
     tar xf LHAPDF-6.X.Y.tar.gz
@@ -29,39 +28,26 @@ On systems where you want to use non-system compilers and libraries, the
 configure command will need to be a bit more complicated: see the following for
 more information.
 
+Version 6.2.0 of LHAPDF, and later, have no external library
+dependencies. Earlier versions rely on the Boost C++ header library. We
+recommend upgrading to the current series to avoid that complication (and
+benefit from other improvements, too).
+
 
 @section compilers Build tools
 
-LHAPDF6 just needs your system to have a copy of Make and a C++ compiler: there
-is no Fortran code and hence no need for gfortran. We have tested with both the
-g++ and clang++ compilers and LHAPDF6 compiles with all known versions.
+LHAPDF6 just needs your system to have a copy of Make and a C++11 compiler:
+there is no Fortran code and hence no need for gfortran. We have tested with
+both the g++ and clang++ compilers.
 
-Building LHAPDF is typically straightforward on Linux systems, including SLC6
+Note that fairly recent compiler versions are needed, to get C++11 support: g++
+>= 4.8.5 and clang++ >= 3.3. The `-std=c++11` flag, if needed, will be added
+automatically by the LHAPDF configure script.
+
+Building LHAPDF is typically straightforward on Linux systems, including CC7
 and Ubuntu. Mac OS X, however, can cause problems due to inconsistent compiler
 and Python versions, and other such fun. If you want to build LHAPDF on a Mac,
 please see @ref osx.
-
-
-@section externals External dependencies
-
-@subsection boost Boost
-
-LHAPDF6 makes use of header files from the Boost C++ utility library
-(http://www.boost.org). On Linux machines this should typically be available via
-your system's packaging mechanism, e.g. the `libboost-all-dev` package on Ubuntu
-and other Debian derivatives. On Scientific Linux 6 the system installation of
-Boost is sufficient for LHAPDF 6.0.5 and later. By comparison, the system copy
-on SL5 is too old, but surely everyone has upgraded to v6 by now...
-
-Building Boost by hand is not particularly simple and should not be needed in
-most cases: we recommend avoiding this! If you have access to the CERN AFS
-filesystem, you can find builds of Boost for various platforms in the
-`/afs/cern.ch/sw/lcg/external/Boost/` directory. If you really want or need to
-do it manually, version 6.0.5 and later of LHAPDF only use Boost headers
-(previous ones used compiled libraries) and rather than fully building Boost,
-you can just use the header files direct from its source tarball: this is not
-wonderfully neat, but is a lot easier than doing a full manual build and
-installation of the Boost libraries.
 
 
 @subsection pyext Python
@@ -70,19 +56,6 @@ If you want to build the Python interface to LHAPDF (which is very nice!), you
 will need the Python development headers to be installed (e.g. via the
 `python-dev` Ubuntu package). If the `Python.h` header is not found by
 `configure`, no Python extension module will be built.
-
-
-<!--
-@subsection cmake CMake (old versions only)
-
-@note In version 6.0.5, the CMake system (i.e. `cmake` command) must also be
-installed, in order to build an internal copy of the yaml-cpp parser library
-(http://code.google.com/p/yaml-cpp/) used to read the PDF metadata which is in
-YAML format (http://www.yaml.org). Before this you needed to install an external
-version of yaml-cpp. Both these requirements were removed in version 6.1.0,
-where a special version of yaml-cpp is built internally without needing CMake at
-all: you should upgrade to the v6.1 releases to make life easy!
--->
 
 
 @section lhapdf Building LHAPDF
@@ -99,21 +72,9 @@ requirements for external packages if you build this way, since this is the
 Now you should run the `configure` script to analyse your machine, compiler,
 etc. and set up the Makefiles. You will probably need to provide the `--prefix`
 argument to `configure` to tell it where you want to install LHAPDF (probably
-you don't want to install to `/usr/local`, which is the default) and perhaps use
-the `--with-boost` flag to indicate the locations of your
-Boost installation. For example,
+you don't want to install to `/usr/local`, which is the default). For example,
 
     ./configure --prefix=$HOME/local
-
-should be appropriate if you have installed Boost in `/usr` via your
-machine's packaging system. If not, you will need something like
-
-    ./configure --prefix=$HOME/local --with-boost=$HOME/pkgs/boost-1_58
-
-The `--prefix`, `--with-boost`, etc. path flags expect the "base" location of
-the package, e.g. if you have installed library X such that there are headers in
-`/foo/include/` (or `/foo/include/X`) and a compiled library (or libraries) in
-`/foo/lib/` then you would use `--with-X=/foo`.
 
 An example build script for LHAPDF6 on the CERN lxplus6 system is shown at the
 end of these instructions.
@@ -126,7 +87,7 @@ variable on the command line. This is essential on OS X Mavericks and later,
 where the consistent compiler suite is clang rather than gcc -- in that
 situation, use:
 
-    ./configure --prefix=... CC=clang CXX=clang++
+    ./configure --prefix=... CXX=clang++
 
 The configure script will run and produce quite a bit of output from its various
 tests. Hopefully everything will be successful: if it gets to the end without
@@ -140,16 +101,26 @@ location that you specified, call `make install`. You will (or at least
 `$prefix/share/LHAPDF`.
 
 
-@section lxplus Building on lxplus
+@section lxplus Building on lxplus / LCG
 
-CERN's lxplus shared system is always an awkward environment to build packages,
+CERN's lxplus6 shared system is always an awkward environment to build packages,
 since the system compiler etc. are not part of the LCG supported list of
-architectures. Here is an example of how to build LHAPDF and its dependencies
-there -- although you can of course use other compilers, Python versions, build
-flags, etc. as you wish!
+architectures.
 
-    ## Set up LCG build tools (optional) and install directory
-    #source /afs/cern.ch/sw/lcg/contrib/gcc/4.7/x86_64-slc6-gcc47-opt/setup.sh
+The SLC6 system compiler is too old to support C++11, and hence
+setting up a non-system compiler (and consistent Python) is mandatory even if not
+wishing to interact with LCG/experiment tools; on CC7 the system compiler is (just)
+new enough for C++11, and so you can use the system environment and make a completely
+standard build if you don't need to be LCG-compatible.
+
+Here is an example of how to build LHAPDF using LCG tools on lxplus6 and lxplus7 --
+although you can of course use other compilers, Python versions, build flags, etc. as you wish.
+
+    ## Set up LCG compiler & Python (required on SLC6/lxplus6, optional on CC7/lxplus7)
+    source /cvmfs/sft.cern.ch/lcg/releases/LCG_87/gcc/4.9.3/x86_64-slc6/setup.sh
+    source /cvmfs/sft.cern.ch/lcg/releases/LCG_87/Python/2.7.10/x86_64-slc6-gcc49-opt/Python-env.sh
+
+    ## Make an install directory
     mkdir local
 
     ## Build LHAPDF
@@ -200,6 +171,38 @@ see HepForge's information about MacPorts at https://www.hepforge.org/docs/macos
 With both these approaches, you should set your environment to *only* use
 compilers and Python from the Brew/Ports area and to ignore the system packages:
 a hybrid approach will only cause unnecessary pain.
+
+
+@section boost Boost (for LHAPDF < 6.2)
+
+Until LHAPDF 6.2.0, we made use of header files from the Boost C++ utility
+library (http://www.boost.org). This made building LHAPDF a bit more complex,
+and for reference we include some troubleshooting information here... for
+now. The much better solution, however, is to use the current version which has
+no such dependency.
+
+If Boost is installed in the system `/usr` directory tree, via your machine's
+packaging system, it should be discovered automatically. If not, you will need to use
+something like
+
+    ./configure --prefix=$HOME/local --with-boost=$HOME/pkgs/boost-1_58
+
+for your LHAPDF configuration step.
+
+On Linux machines, Boost this should typically be available via
+your system's packaging mechanism, e.g. the `libboost-all-dev` package on Ubuntu
+and other Debian derivatives. On Scientific Linux 6 the system installation of
+Boost is sufficient.
+
+Building Boost by hand is not particularly simple and should not be needed in
+most cases: we recommend avoiding this! If you have access to the CERN AFS
+filesystem, you can find builds of Boost for various platforms in the
+`/afs/cern.ch/sw/lcg/external/Boost/` directory. If you really want or need to
+do it manually, version 6.0.5 and later of LHAPDF only use Boost headers
+(previous ones used compiled libraries) and rather than fully building Boost,
+you can just use the header files direct from its source tarball: this is not
+wonderfully neat, but is a lot easier than doing a full manual build and
+installation of the Boost libraries.
 
 
 */

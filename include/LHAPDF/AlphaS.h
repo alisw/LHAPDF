@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2014 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_AlphaS_H
@@ -187,16 +187,18 @@ namespace LHAPDF {
     /// Set lambda_i (for i = flavour number)
     void setLambda(unsigned int i, double lambda);
 
+
   private:
 
     /// Get lambdaQCD for nf
     double _lambdaQCD(int nf) const;
 
-    /// LambdaQCD values.
-    std::map<int, double> _lambdas;
-
     /// Recalculate min/max flavors in case lambdas have changed
     void _setFlavors();
+
+
+    /// LambdaQCD values.
+    std::map<int, double> _lambdas;
 
     /// Max number of flavors
     int _nfmax;
@@ -204,6 +206,7 @@ namespace LHAPDF {
     int _nfmin;
 
   };
+
 
 
   /// Interpolate alpha_s from tabulated points in Q2 via metadata
@@ -221,25 +224,22 @@ namespace LHAPDF {
     /// Set the array of Q values for interpolation
     ///
     /// Writes to the same internal arrays as setQ2Values, appropriately transformed.
-    void setQValues(const std::vector<double>& qs) {
-      std::vector<double> q2s;
-      BOOST_FOREACH (double q, qs) q2s.push_back(q*q);
-      setQ2Values(q2s);
-    }
+    void setQValues(const std::vector<double>& qs);
 
     /// Set the array of Q2 values for interpolation
     ///
     /// Subgrids are represented by repeating the values which are the end of
     /// one subgrid and the start of the next. The supplied vector must match
     /// the layout of alpha_s values.
-    void setQ2Values(const std::vector<double>& q2s);
+    void setQ2Values(const std::vector<double>& q2s) { _q2s = q2s; }
 
     /// Set the array of alpha_s(Q2) values for interpolation
     ///
     /// The supplied vector must match the layout of Q2 knots.  Subgrids may
     /// have discontinuities, i.e. different alpha_s values on either side of a
     /// subgrid boundary (for the same Q values).
-    void setAlphaSValues(const std::vector<double>& as);
+    void setAlphaSValues(const std::vector<double>& as) { _as = as; }
+
 
   private:
 
@@ -256,6 +256,7 @@ namespace LHAPDF {
     /// @note This is const so it can be called silently from a const method
     void _setup_grids() const;
 
+
     /// Map of AlphaSArrays "binned" for lookup by low edge in (log)Q2
     /// @note This is mutable so it can be initialized silently from a const method
     mutable std::map<double, AlphaSArray> _knotarrays;
@@ -266,6 +267,7 @@ namespace LHAPDF {
     std::vector<double> _as;
 
   };
+
 
 
   /// Solve the differential equation in alphaS using an implementation of RK4
@@ -291,16 +293,13 @@ namespace LHAPDF {
     void setAlphaSReference( double alphas ) { _alphas_reference = alphas; _calculated = false; _customref = true; }
 
     /// Set the array of Q values for interpolation, and also the caching flag
-    void setQValues(const std::vector<double>& qs) {
-      std::vector<double> q2s;
-      BOOST_FOREACH (double q, qs) q2s.push_back(q*q);
-      setQ2Values(q2s);
-    }
+    void setQValues(const std::vector<double>& qs);
 
     /// @brief Set the array of Q2 values for interpolation, and also the caching flag
     ///
     /// Writes to the same internal array as setQValues, appropriately transformed.
     void setQ2Values( std::vector<double> q2s ) { _q2s = q2s; _calculated = false; }
+
 
   private:
 
@@ -320,7 +319,6 @@ namespace LHAPDF {
     /// Create interpolation grid
     void _interpolate() const;
 
-  private:
 
     /// Vector of Q2s in case specific anchor points are used
     mutable std::vector<double> _q2s;

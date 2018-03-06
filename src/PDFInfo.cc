@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2014 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/PDFInfo.h"
 #include "LHAPDF/PDFSet.h"
@@ -10,7 +10,7 @@
 namespace LHAPDF {
 
 
-  /// Constructor from a path to a member data file.
+  // Constructor from a path to a member data file.
   PDFInfo::PDFInfo(const std::string& mempath) {
     if (mempath.empty())
       throw UserError("Empty/invalid data path given to PDFInfo constructor");
@@ -24,7 +24,7 @@ namespace LHAPDF {
   }
 
 
-  /// Constructor from a set name and member ID.
+  // Constructor from a set name and member ID.
   PDFInfo::PDFInfo(const std::string& setname, int member) {
     _setname = setname;
     _member = member;
@@ -35,7 +35,7 @@ namespace LHAPDF {
   }
 
 
-  /// Constructor from an LHAPDF ID code.
+  // Constructor from an LHAPDF ID code.
   PDFInfo::PDFInfo(int lhaid) {
     const pair<string,int> setname_memid = lookupPDF(lhaid);
     if (setname_memid.second == -1)
@@ -48,6 +48,7 @@ namespace LHAPDF {
   }
 
 
+  // Overload of Info::has_key() which adds fallback to the PDFSet
   bool PDFInfo::has_key(const string& key) const {
     // cout << key << " in PDF: " << boolalpha << has_key_local(key) << endl;
     // cout << key << " in Set: " << boolalpha << getPDFSet(_setname).has_key(key) << endl;

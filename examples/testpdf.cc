@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
 
   const string setname = argv[1];
   const string smem = argv[2];
-  const int imem = boost::lexical_cast<int>(smem);
+  const int imem = lexical_cast<int>(smem);
 
   const PDF* pdf = mkPDF(setname, imem);
   vector<int> pids = pdf->flavors();
@@ -32,8 +32,8 @@ int main(int argc, char* argv[]) {
   const double DQ2 = 0.01;
   const int NQ2 = (int) floor((MAXLOGQ2 - MINLOGQ2)/DQ2) + 1;
 
-  BOOST_FOREACH (int pid, pids) {
-    const string spid = boost::lexical_cast<string>(pid);
+  for (int pid : pids) {
+    const string spid = lexical_cast<string>(pid);
     const string filename = setname + "_" + smem + "_" + spid + ".dat";
     ofstream f(filename.c_str());
     for (int ix = 0; ix < NX; ++ix) {

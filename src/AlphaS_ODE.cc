@@ -1,13 +1,20 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2014 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/AlphaS.h"
 #include "LHAPDF/Utils.h"
-#include "boost/bind.hpp"
 
 namespace LHAPDF {
+
+
+  void AlphaS_ODE::setQValues(const std::vector<double>& qs) {
+    vector<double> q2s;
+    for (double q : qs) q2s.push_back(q*q);
+    setQ2Values(q2s);
+  }
+
 
   // Calculate first order derivative, dy/dt, as it appears in the differential equation
   double AlphaS_ODE::_derivative(double t, double y, const vector<double>& beta) const {
@@ -23,6 +30,9 @@ namespace LHAPDF {
     if ( _qcdorder == 3 ) return - d / t;
     const double b3 = beta[3];
     d += (b3*y*y*y*y*y);
+    if ( _qcdorder == 4 ) return - d / t;
+    const double b4 = beta[4];
+    d += (b4*y*y*y*y*y*y);
     return - d / t;
   }
 
@@ -291,14 +301,14 @@ namespace LHAPDF {
       }
     }
 
-    std::sort(grid.begin(), grid.end(),
-              boost::bind(&std::pair<int, double>::first, _1) < boost::bind(&std::pair<int, double>::first, _2));
+    std::sort(grid.begin(), grid.end(), [](const pair<int, double>& a, const pair<int, double>& b) { return a.first < b.first; });
+    /// @todo auto lambda args need C++14: std::sort(grid.begin(), grid.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
 
     vector<double> alphas;
     alphas.reserve(_q2s.size());
 
     for ( size_t x = 0; x < grid.size(); ++x ) {
-//        cout << sqrt(_q2s.at(x)) << "       " << grid.at(x).second << endl;
+      // cout << sqrt(_q2s.at(x)) << "       " << grid.at(x).second << endl;
        alphas.push_back(grid.at(x).second);
     }
 

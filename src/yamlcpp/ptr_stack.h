@@ -17,28 +17,28 @@ class ptr_stack: private LHAPDF_YAML::noncopyable
 public:
 	ptr_stack() {}
 	~ptr_stack() { clear(); }
-	
+
 	void clear() {
 		for(unsigned i=0;i<m_data.size();i++)
 			delete m_data[i];
 		m_data.clear();
 	}
-	
+
 	std::size_t size() const { return m_data.size(); }
 	bool empty() const { return m_data.empty(); }
-	
-	void push(std::auto_ptr<T> t) {
+
+	void push(std::unique_ptr<T> t) {
 		m_data.push_back(NULL);
 		m_data.back() = t.release();
 	}
-	std::auto_ptr<T> pop() {
-		std::auto_ptr<T> t(m_data.back());
+	std::unique_ptr<T> pop() {
+		std::unique_ptr<T> t(m_data.back());
 		m_data.pop_back();
 		return t;
 	}
 	T& top() { return *m_data.back(); }
 	const T& top() const { return *m_data.back(); }
-	
+
 private:
 	std::vector<T*> m_data;
 };

@@ -13,8 +13,11 @@ try:
     configured_datadir = lhapdf.paths()[0]
 except ImportError:
     __version__ = '@PACKAGE_VERSION@'
-    configured_datadir = '@datarootdir@/@PACKAGE_TARNAME@'.replace('${prefix}', '@prefix@')
+    configured_datadir = '@datadir@/@PACKAGE_TARNAME@'\
+                         .replace('${datarootdir}', '@datarootdir@')\
+                         .replace('${prefix}', '@prefix@')
 major_version = '.'.join(__version__.split('.')[:2])
+#print major_version, configured_datadir
 
 
 ## Base paths etc. for set and index file downloading
@@ -204,7 +207,7 @@ def get_reference_list(filepath):
     database = []
     try:
         import csv
-        csv_file = open(filepath, 'rb')
+        csv_file = open(filepath, 'r')
         logging.debug('Reading %s' % filepath)
         reader = csv.reader(csv_file, delimiter=' ', skipinitialspace=True, strict=True)
         for row in reader:
@@ -228,44 +231,15 @@ def get_reference_list(filepath):
     return database
 
 
-# TODO: Require the Python module and use availablePDFSets()?
-def get_installed_list(path):
-    """Returns list of PDFSet objects representing PDFs installed in 'path'.
-
-    The path to each YAML file is assumed to be:
-    path/pdf_name/pdf_name.info
+def get_installed_list(_=None):
+    """Returns a list of SetInfo objects representing installed PDF sets.
     """
-    if not os.path.isdir(path):
-        logging.error('Unable to find directory %s' % path)
-        return []
-
-    version_fieldname = 'DataVersion'
-
+    import lhapdf
     database = []
-    for subdir in os.listdir(path):
-        metadata_filepath = os.path.join(path, subdir, subdir + os.extsep + 'info')
-        if os.path.isfile(metadata_filepath):
-            try:
-                metadata_file = open(metadata_filepath, 'rb')
-                logging.debug('Reading %s' % metadata_filepath)
-
-                # Attempt to find PDF version from YAML file
-                for line in metadata_file:
-                    if version_fieldname in line:
-                        version = int(line.split(version_fieldname, 1)[1].split(':', 1)[1].strip())
-                        break
-                else:
-                    version = None
-
-                name = subdir
-                database.append(SetInfo(name, 0, version))
-            except IOError:
-                logging.error('Could not open %s' % metadata_filepath)
-            except ValueError:
-                logging.error('Corrupted file %s' % metadata_filepath)
-                metadata_file.close()
-            else:
-                metadata_file.close()
+    setnames = lhapdf.availablePDFSets()
+    for sn in setnames:
+        pdfset = lhapdf.getPDFSet(sn)
+        database.append(SetInfo(sn, pdfset.lhapdfID, pdfset.dataversion))
     return database
 
 
@@ -297,10 +271,13 @@ def download_url(source, dest_dir, dryrun=False):
 
     else: # URL
         url = source
-        import urllib2 as urllib
+        try:
+            import urllib.request as urllib
+        except ImportError:
+            import urllib2 as urllib
         try:
             u = urllib.urlopen(url)
-            file_size = int(u.info().getheaders('Content-Length')[0])
+            file_size = int(u.info().get('Content-Length')[0])
         except urllib.URLError:
             e = sys.exc_info()[1]
             logging.error('Unable to download %s' % url)

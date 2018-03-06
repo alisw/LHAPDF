@@ -12,7 +12,7 @@ endif
 
 ## fixes for out-of-source builds, especially "make distcheck"
 
-FIXSOURCES = $(EXTRA_DIST) 
+FIXSOURCES = $(EXTRA_DIST)
 
 fix-out-of-source: $(FIXSOURCES)
 	for i in $^; do \
@@ -25,7 +25,7 @@ fix-out-of-source: $(FIXSOURCES)
 
 if WITH_PYTHON
 
-PYEXT_ENV = CC=$(CC) CXX=$(CXX)
+PYEXT_ENV = CC="$(CXX)" CXX="$(CXX)"
 
 ## Always force setup.py, it's not good at guessing what needs to rebuild
 all-local: fix-out-of-source

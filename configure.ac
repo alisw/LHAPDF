@@ -1,7 +1,7 @@
 ## Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([LHAPDF],[6.1.6],[lhapdf@projects.hepforge.org],[LHAPDF])
+AC_INIT([LHAPDF],[6.2.1],[lhapdf@projects.hepforge.org],[LHAPDF])
 if test "$prefix" = "$PWD"; then
   AC_MSG_ERROR([Installation into the build directory is not supported: use a different --prefix argument])
 fi
@@ -43,23 +43,16 @@ AC_CONFIG_HEADERS([config/config.h include/LHAPDF/Version.h])
 if test -z $CXXFLAGS; then
     CXXFLAGS='-O3'
 fi
-AC_PROG_CXX
 
-## This block can go once we decide to have C++11 always on
-## TODO: Is this necessary? Not just let the user set CXXFLAGS?
-AC_MSG_CHECKING([whether to include C++11 flag for testing])
-AC_ARG_ENABLE(stdcxx11, AC_HELP_STRING([--enable-stdcxx11],
-  [turn on C++11 flag (only for testing, do not use in production!)]), [], [enable_stdcxx11=no])
-if test "x$enable_stdcxx11" = "xyes"; then
-  AC_MSG_RESULT([yes])
-  dnl remove the wrapper if block and "optional" once we decide to have C++11 always on
-  AX_CXX_COMPILE_STDCXX_11([noext],[optional])
-  if test "x$HAVE_CXX11" != "x1"; then
-  AC_MSG_ERROR([compiler does not recognize requested c++11 option])
-  fi
-else
-  AC_MSG_RESULT([no])
-fi
+## Require C++11
+AC_PROG_CXX
+AX_CXX_COMPILE_STDCXX([11], [noext], [mandatory])
+
+## Substitute compiler flags for the lhapdf-config script
+LHAPDF_CXX="$CXX"
+AC_SUBST(LHAPDF_CXX)
+LHAPDF_CXXFLAGS="$CXXFLAGS"
+AC_SUBST(LHAPDF_CXXFLAGS)
 
 AC_PROG_CC
 AC_PROG_INSTALL
@@ -148,20 +141,6 @@ if test x$prefix != xNONE; then
 fi
 
 
-## Boost utility library
-BOOST_REQUIRE([1.41.0])
-BOOST_FOREACH
-BOOST_SMART_PTR
-BOOST_STRING_ALGO
-BOOST_FIND_HEADER([boost/lexical_cast.hpp])
-BOOST_FIND_HEADER([boost/range.hpp])
-BOOST_FIND_HEADER([boost/bind.hpp])
-BOOST_FIND_HEADER([boost/random.hpp])
-BOOST_FIND_HEADER([boost/math/distributions/chi_squared.hpp])
-BOOST_FIND_HEADER([boost/math/special_functions/erf.hpp])
-
-BOOST_BUG_IN_FOREACH
-
 ## Export base compiler flags
 AC_SUBST(AM_CPPFLAGS)
 AC_SUBST(AM_CXXFLAGS)
@@ -173,10 +152,11 @@ AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([src/yamlcpp/Makefile])
 AC_CONFIG_FILES([include/Makefile include/LHAPDF/Makefile])
+AC_CONFIG_FILES([bin/Makefile])
+AC_CONFIG_FILES([bin/lhapdf bin/lhapdf-config])
 AC_CONFIG_FILES([examples/Makefile])
 AC_CONFIG_FILES([tests/Makefile])
 AC_CONFIG_FILES([doc/Makefile doc/Doxyfile])
-AC_CONFIG_FILES([lhapdf lhapdf-config])
 AC_CONFIG_FILES([lhapdf.pc])
 AC_CONFIG_FILES([wrappers/Makefile])
 AC_CONFIG_FILES([wrappers/python/Makefile wrappers/python/setup.py])

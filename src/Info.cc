@@ -1,12 +1,12 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2014 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/Info.h"
 #include "LHAPDF/PDFIndex.h"
-#include "yaml-cpp/yaml.h"
 
+#include "yaml-cpp/yaml.h"
 #ifdef YAML_NAMESPACE
 #define YAML YAML_NAMESPACE
 #endif
@@ -25,15 +25,19 @@ namespace LHAPDF {
     try {
       // Do the parsing "manually" up to the first doc delimiter
       std::ifstream file(filepath.c_str());
-      YAML::Node doc;
 
       #if YAMLCPP_API == 3
 
+      YAML::Node doc;
       YAML::Parser parser(file);
       parser.GetNextDocument(doc);
       for (YAML::Iterator it = doc.begin(); it != doc.end(); ++it) {
         string key, val;
         it.first() >> key;
+        /// @todo This is much neater, but we need to remove the surrounding square brackets... and spaces?
+        // YAML::Emitter em;
+        // em << it.second();
+        // val = em.c_str();
         try {
           // Assume the value is a scalar type -- it'll throw an exception if not
           it.second() >> val;
@@ -53,26 +57,30 @@ namespace LHAPDF {
 
       string docstr, line;
       while (getline(file, line)) {
-        //cout << "@ " << line << endl;
         if (line == "---") break;
         docstr += line + "\n";
       }
-      doc = YAML::Load(docstr);
+      YAML::Node doc = YAML::Load(docstr);
       for (YAML::const_iterator it = doc.begin(); it != doc.end(); ++it) {
         const string key = it->first.as<string>();
+        /// @todo This is much neater, but we need to remove the surrounding square brackets... and spaces?
+        // YAML::Emitter em;
+        // em << it->second();
+        // const string val = em.c_str();
+        // _metadict[key] = val;
         const YAML::Node& val = it->second;
         if (val.IsScalar()) {
           // Scalar value
           _metadict[key] = val.as<string>();
         } else {
           // Process the sequence entries into a comma-separated string
+          /// @todo Surely there's a better way... use *any* storage in the metadict?
           string seqstr = "";
           for (size_t i = 0; i < val.size(); ++i)
             seqstr += val[i].as<string>() + ((i < val.size()-1) ? "," : "");
           _metadict[key] = seqstr;
         }
       }
-
       #endif
     } catch (const YAML::ParserException& ex) {
       throw ReadError("YAML parse error in " + filepath + " :" + ex.what());

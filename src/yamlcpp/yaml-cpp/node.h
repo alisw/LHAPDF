@@ -35,15 +35,15 @@ namespace LHAPDF_YAML
 	public:
 		friend class NodeOwnership;
 		friend class NodeBuilder;
-		
+
 		Node();
 		~Node();
 
 		void Clear();
-		std::auto_ptr<Node> Clone() const;
+		std::unique_ptr<Node> Clone() const;
 		void EmitEvents(EventHandler& eventHandler) const;
 		void EmitEvents(AliasManager& am, EventHandler& eventHandler) const;
-		
+
 		NodeType::value Type() const { return m_type; }
 		bool IsAliased() const;
 
@@ -74,7 +74,7 @@ namespace LHAPDF_YAML
 
 		template <typename T>
 		const Node& operator [] (const T& key) const;
-		
+
 		// specific to maps
 		const Node *FindValue(const char *key) const;
 		const Node *FindValue(char *key) const;
@@ -94,9 +94,9 @@ namespace LHAPDF_YAML
 	private:
 		explicit Node(NodeOwnership& owner);
 		Node& CreateNode();
-		
+
 		void Init(NodeType::value type, const Mark& mark, const std::string& tag);
-		
+
 		void MarkAsAliased();
 		void SetScalarData(const std::string& data);
 		void Append(Node& node);
@@ -105,7 +105,7 @@ namespace LHAPDF_YAML
 		// helper for sequences
 		template <typename, bool> friend struct _FindFromNodeAtIndex;
 		const Node *FindAtIndex(std::size_t i) const;
-		
+
 		// helper for maps
 		template <typename T>
 		const Node& GetValue(const T& key) const;
@@ -114,7 +114,7 @@ namespace LHAPDF_YAML
 		const Node *FindValueForKey(const T& key) const;
 
 	private:
-		std::auto_ptr<NodeOwnership> m_pOwnership;
+		std::unique_ptr<NodeOwnership> m_pOwnership;
 
 		Mark m_mark;
 		std::string m_tag;

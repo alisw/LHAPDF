@@ -19,21 +19,21 @@
 namespace LHAPDF_YAML
 {
 	class EmitterState;
-	
+
 	class YAML_CPP_API Emitter: private noncopyable
 	{
 	public:
 		Emitter();
 		~Emitter();
-		
+
 		// output
 		const char *c_str() const;
 		unsigned size() const;
-		
+
 		// state checking
 		bool good() const;
 		const std::string GetLastError() const;
-		
+
 		// global setters
 		bool SetOutputCharset(EMITTER_MANIP value);
 		bool SetStringFormat(EMITTER_MANIP value);
@@ -46,12 +46,12 @@ namespace LHAPDF_YAML
 		bool SetPostCommentIndent(unsigned n);
         bool SetFloatPrecision(unsigned n);
         bool SetDoublePrecision(unsigned n);
-		
+
 		// local setters
 		Emitter& SetLocalValue(EMITTER_MANIP value);
 		Emitter& SetLocalIndent(const _Indent& indent);
         Emitter& SetLocalPrecision(const _Precision& precision);
-		
+
 		// overloads of write
 		Emitter& Write(const std::string& str);
 		Emitter& Write(bool b);
@@ -62,10 +62,10 @@ namespace LHAPDF_YAML
 		Emitter& Write(const _Comment& comment);
 		Emitter& Write(const _Null& null);
 		Emitter& Write(const Binary& binary);
-		
+
 		template <typename T>
 		Emitter& WriteIntegralType(T value);
-		
+
 		template <typename T>
 		Emitter& WriteStreamable(T value);
 
@@ -74,17 +74,17 @@ namespace LHAPDF_YAML
 		void PreWriteStreamable(std::stringstream& str);
 		void PostWriteIntegralType(const std::stringstream& str);
 		void PostWriteStreamable(const std::stringstream& str);
-        
+
         template<typename T> void SetStreamablePrecision(std::stringstream&) {}
         unsigned GetFloatPrecision() const;
         unsigned GetDoublePrecision() const;
-	
+
 	private:
 		void PreAtomicWrite();
 		bool GotoNextPreAtomicState();
 		void PostAtomicWrite();
 		void EmitSeparationIfNecessary();
-		
+
 		void EmitBeginDoc();
 		void EmitEndDoc();
 		void EmitBeginSeq();
@@ -96,21 +96,21 @@ namespace LHAPDF_YAML
 		void EmitNewline();
 		void EmitKindTag();
 		void EmitTag(bool verbatim, const _Tag& tag);
-		
+
 		const char *ComputeFullBoolName(bool b) const;
 		bool CanEmitNewline() const;
-		
+
 	private:
 		ostream m_stream;
-		std::auto_ptr <EmitterState> m_pState;
+		std::unique_ptr <EmitterState> m_pState;
 	};
-	
+
 	template <typename T>
 	inline Emitter& Emitter::WriteIntegralType(T value)
 	{
 		if(!good())
 			return *this;
-		
+
 		std::stringstream str;
 		PreWriteIntegralType(str);
 		str << value;
@@ -123,7 +123,7 @@ namespace LHAPDF_YAML
 	{
 		if(!good())
 			return *this;
-		
+
 		std::stringstream str;
 		PreWriteStreamable(str);
         SetStreamablePrecision<T>(str);
@@ -131,7 +131,7 @@ namespace LHAPDF_YAML
 		PostWriteStreamable(str);
 		return *this;
 	}
-	
+
     template<>
     inline void Emitter::SetStreamablePrecision<float>(std::stringstream& str)
     {
@@ -173,11 +173,11 @@ namespace LHAPDF_YAML
 	inline Emitter& operator << (Emitter& emitter, EMITTER_MANIP value) {
 		return emitter.SetLocalValue(value);
 	}
-	
+
 	inline Emitter& operator << (Emitter& emitter, _Indent indent) {
 		return emitter.SetLocalIndent(indent);
 	}
-    
+
     inline Emitter& operator << (Emitter& emitter, _Precision precision) {
         return emitter.SetLocalPrecision(precision);
     }

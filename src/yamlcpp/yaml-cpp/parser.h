@@ -31,9 +31,9 @@ namespace LHAPDF_YAML
 
 		void Load(std::istream& in);
 		bool HandleNextDocument(EventHandler& eventHandler);
-		
+
 		bool GetNextDocument(Node& document); // old API only
-		
+
 		void PrintTokens(std::ostream& out);
 
 	private:
@@ -41,10 +41,10 @@ namespace LHAPDF_YAML
 		void HandleDirective(const Token& token);
 		void HandleYamlDirective(const Token& token);
 		void HandleTagDirective(const Token& token);
-		
+
 	private:
-		std::auto_ptr<Scanner> m_pScanner;
-		std::auto_ptr<Directives> m_pDirectives;
+		std::unique_ptr<Scanner> m_pScanner;
+		std::unique_ptr<Directives> m_pDirectives;
 	};
 }
 

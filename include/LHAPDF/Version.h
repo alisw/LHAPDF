@@ -2,7 +2,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2013 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_Version_H
@@ -11,10 +11,10 @@
 #include <string>
 
 /* "LHAPDF version string" */
-#define LHAPDF_VERSION "6.1.6"
+#define LHAPDF_VERSION "6.2.1"
 
 /* "LHAPDF version as an int" */
-#define LHAPDF_VERSION_CODE 60106
+#define LHAPDF_VERSION_CODE 60201
 
 /* "Whether PDFLIB Fortran compatibility is available" */
 #define LHAPDF_PDFLIB 1
@@ -37,4 +37,3 @@ namespace LHAPDF {
 
 }
 #endif
-

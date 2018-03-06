@@ -1,16 +1,15 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2014 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/PDFSet.h"
-#include <boost/math/distributions/chi_squared.hpp>
 
 namespace LHAPDF {
 
 
   PDFSet::PDFSet(const string& setname) {
-    /// @todo Hmm, this relies on the standard search path system ... no specific-path API.
+    /// @todo Hmm, this relies on the standard search path system ... currently no way to provide a absolute path
     _setname = setname;
     const string setinfopath = findpdfsetinfopath(setname);
     if (!file_exists(setinfopath))
@@ -33,7 +32,7 @@ namespace LHAPDF {
 
   double PDFSet::errorConfLevel() const {
     // Return -1 or similar invalid value if errorType is replicas: requires changes in uncertainty code below.
-    return get_entry_as<double>("ErrorConfLevel", (!startswith(errorType(), "replicas")) ? 100*boost::math::erf(1/sqrt(2)) : -1);
+    return get_entry_as<double>("ErrorConfLevel", (!startswith(errorType(), "replicas")) ? 100*erf(1/sqrt(2)) : -1);
   }
 
 
@@ -52,7 +51,7 @@ namespace LHAPDF {
 
     // Get set- and requested conf levels (converted from %) and check sanity (req CL = set CL if cl < 0).
     // For replica sets, we internally use a nominal setCL corresponding to 1-sigma, since errorConfLevel() == -1.
-    const double setCL = (!startswith(errorType(), "replicas")) ? errorConfLevel() / 100.0 : boost::math::erf(1/sqrt(2));
+    const double setCL = (!startswith(errorType(), "replicas")) ? errorConfLevel() / 100.0 : erf(1/sqrt(2));
     const double reqCL = (cl >= 0) ? cl / 100.0 : setCL; // convert from percentage
     if (!in_range(reqCL, 0, 1) || !in_range(setCL, 0, 1))
       throw UserError("Error in LHAPDF::PDFSet::uncertainty. Requested or PDF set confidence level outside [0,1] range.");
@@ -70,9 +69,9 @@ namespace LHAPDF {
       sort(sorted.begin()+1, sorted.end()-2*npar);
       // Define central value to be median.
       if (nmem % 2) { // odd nmem => one middle value
-	rtn.central = sorted[nmem/2 + 1];
+        rtn.central = sorted[nmem/2 + 1];
       } else { // even nmem => average of two middle values
-	rtn.central = 0.5*(sorted[nmem/2] + sorted[nmem/2 + 1]);
+        rtn.central = 0.5*(sorted[nmem/2] + sorted[nmem/2 + 1]);
       }
       // Define uncertainties via quantiles with a CL given by reqCL.
       const int upper = round(0.5*(1+reqCL)*nmem); // round to nearest integer
@@ -90,8 +89,8 @@ namespace LHAPDF {
       // Calculate the average and standard deviation using Eqs. (2.3) and (2.4) of arXiv:1106.5788v2.
       double av = 0.0, sd = 0.0;
       for (size_t imem = 1; imem <= nmem; imem++) {
-	av += values[imem];
-	sd += sqr(values[imem]);
+        av += values[imem];
+        sd += sqr(values[imem]);
       }
       av /= nmem; sd /= nmem;
       sd = nmem/(nmem-1.0)*(sd-sqr(av));
@@ -103,7 +102,7 @@ namespace LHAPDF {
 
       double errsymm = 0;
       for (size_t ieigen = 1; ieigen <= nmem; ieigen++)
-	errsymm += sqr(values[ieigen]-values[0]);
+        errsymm += sqr(values[ieigen]-values[0]);
       errsymm = sqrt(errsymm);
       rtn.errplus = rtn.errminus = rtn.errsymm = errsymm;
 
@@ -113,9 +112,9 @@ namespace LHAPDF {
       // using Eqs. (2.1), (2.2) and (2.6) of arXiv:1106.5788v2.
       double errplus = 0, errminus = 0, errsymm = 0;
       for (size_t ieigen = 1; ieigen <= nmem/2; ieigen++) {
-	errplus += sqr(max(max(values[2*ieigen-1]-values[0],values[2*ieigen]-values[0]), 0.0));
-	errminus += sqr(max(max(values[0]-values[2*ieigen-1],values[0]-values[2*ieigen]), 0.0));
-	errsymm += sqr(values[2*ieigen-1]-values[2*ieigen]);
+        errplus += sqr(max(max(values[2*ieigen-1]-values[0],values[2*ieigen]-values[0]), 0.0));
+        errminus += sqr(max(max(values[0]-values[2*ieigen-1],values[0]-values[2*ieigen]), 0.0));
+        errsymm += sqr(values[2*ieigen-1]-values[2*ieigen]);
       }
       rtn.errsymm = 0.5*sqrt(errsymm);
       rtn.errplus = sqrt(errplus);
@@ -130,16 +129,15 @@ namespace LHAPDF {
 
       // Calculate the qth quantile of the chi-squared distribution with one degree of freedom.
       // Examples: quantile(dist, q) = {0.988946, 1, 2.70554, 3.84146, 4} for q = {0.68, 1-sigma, 0.90, 0.95, 2-sigma}.
-      boost::math::chi_squared dist(1);
-      double qsetCL = boost::math::quantile(dist, setCL);
-      double qreqCL = boost::math::quantile(dist, reqCL);
+      double qsetCL = chisquared_quantile(setCL, 1);
+      double qreqCL = chisquared_quantile(reqCL, 1);
       // Scale uncertainties from the original set CL to the requested CL.
       const double scale = sqrt(qreqCL/qsetCL);
       rtn.scale = scale;
       if (!alternative) {
-	rtn.errplus *= scale;
-	rtn.errminus *= scale;
-	rtn.errsymm *= scale;
+        rtn.errplus *= scale;
+        rtn.errminus *= scale;
+        rtn.errsymm *= scale;
       }
 
     }
@@ -152,7 +150,7 @@ namespace LHAPDF {
       // All individual parameter variation uncertainties are added in quadrature.
       double err_par = 0;
       for (size_t ipar = 1; ipar <= npar; ipar++) {
-	err_par += sqr(values[nmem+2*ipar-1]-values[nmem+2*ipar]);
+        err_par += sqr(values[nmem+2*ipar-1]-values[nmem+2*ipar]);
       }
       // Calculate total uncertainty from parameter variation with same scaling as for PDF uncertainty.
       rtn.err_par = rtn.scale * 0.5 * sqrt(err_par);
@@ -278,13 +276,13 @@ namespace LHAPDF {
     // Check that PDF members have "PdfType: replica" or "PdfType: error".
     if (startswith(errorType(), "replicas")) {
       for (size_t imem = 1; imem <= nmem; imem++) {
-    	if (pdftypes[imem] != "replica")
-    	  throw MetadataError("Member " + boost::lexical_cast<string>(imem) + ", \"PdfType: " + pdftypes[imem] + "\" should be \"PdfType: replica\".");
+        if (pdftypes[imem] != "replica")
+          throw MetadataError("Member " + to_str(imem) + ", \"PdfType: " + pdftypes[imem] + "\" should be \"PdfType: replica\".");
       }
     } else if (startswith(errorType(), "symmhessian") || startswith(errorType(), "hessian")) {
       for (size_t imem = 1; imem <= nmem; imem++) {
-    	if (pdftypes[imem] != "error")
-    	  throw MetadataError("Member " + boost::lexical_cast<string>(imem) + ", \"PdfType: " + pdftypes[imem] + "\" should be \"PdfType: error\".");
+        if (pdftypes[imem] != "error")
+          throw MetadataError("Member " + to_str(imem) + ", \"PdfType: " + pdftypes[imem] + "\" should be \"PdfType: error\".");
       }
     } else {
       throw MetadataError("\"ErrorType: " + errorType() + "\" not supported by LHAPDF::PDFSet::checkPdfType.");
@@ -293,7 +291,7 @@ namespace LHAPDF {
     // Check that possible parameter variations have "PdfType: central".
     for (size_t imem = nmem+1; imem <= size()-1; imem++) {
       if (pdftypes[imem] != "central")
-        throw MetadataError("Member " + boost::lexical_cast<string>(imem) + ", \"PdfType: " + pdftypes[imem] + "\" should be \"PdfType: central\".");
+        throw MetadataError("Member " + to_str(imem) + ", \"PdfType: " + pdftypes[imem] + "\" should be \"PdfType: central\".");
     }
 
     //cout << "Success: PdfType of each member matches the ErrorType of the set." << endl;

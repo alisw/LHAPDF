@@ -26,11 +26,11 @@ int main() {
   cout << "PdfType: " << info.get_entry("PdfType") << endl;
   cout << "Verbosity from PDF: " << info.get_entry("Verbosity") << endl;
   vector<int> pids = info.get_entry_as< vector<int> >("Flavors");
-  cout << "PIDs (1): "; BOOST_FOREACH (int f, pids) { cout << f << " "; } cout << endl;
+  cout << "PIDs (1): "; for (int f : pids) { cout << f << " "; } cout << endl;
   cout << "PIDs (2): " << LHAPDF::to_str(pids) << endl;
 
   // Now test loading of all central PDFs
-  BOOST_FOREACH (const string& name, LHAPDF::availablePDFSets()) {
+  for (const string& name : LHAPDF::availablePDFSets()) {
     cout << "Testing PDFInfo for " << name << endl;
     LHAPDF::PDFInfo* i = LHAPDF::mkPDFInfo(name, 0);
     i->has_key("Foo"); // < Force loading of all info levels

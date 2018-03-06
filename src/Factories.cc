@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2014 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/Info.h"
 #include "LHAPDF/Config.h"
@@ -65,112 +65,8 @@ namespace LHAPDF {
   }
 
 
-  namespace { // Keep this in an unnamed namespace for now, until stable/final for API
-
-
-    // /// @brief Expand a string describing a chain of PDFs with wildcards into a list of definite chain strings
-    // ///
-    // /// Operation:
-    // ///   SETA/1 * SETB/*     or     SETA/1 * SETB
-    // ///   ->
-    // ///   [SETA/1, SETB/*]
-    // ///   ->
-    // ///   [SETA/1 * SETB/0, SETA/1 * SETB/1, ...] (via PDFSet)
-    // ///
-    // /// @todo Handle more complex wildcards such as member ID ranges
-    // ///
-    // vector<string> expandPDFsStr(const string& pdfsstr) {
-    //   // Split into multiplicative parts
-    //   vector<string> parts;
-    //   iter_split(parts, pdfsstr, boost::algorithm::first_finder(" * "));
-    //   BOOST_FOREACH (string& part, parts) trim(part);
-
-    //   // Expand each part into a single PDF spec and append it
-    //   vector<string> rtn;
-    //   BOOST_FOREACH (string part, parts) {
-    //     // No member number corresponds to whole-set wildcard expansion in this context
-    //     if (!contains(part, "/")) part += "/*";
-
-    //     // Make a list of strings corresponding to the expansion of the current part
-    //     vector<string> expandedpart;
-    //     if (endswith(part, "/*")) {
-    //       const string setname = part.substr(0, part.find("/*"));
-    //       const PDFSet& set = getPDFSet(setname);
-    //       for (size_t i = 0; i < set.size(); ++i)
-    //         expandedpart.push_back(setname + "/" + to_str(i));
-    //     } else {
-    //       expandedpart.push_back(part);
-    //     }
-
-    //     // Append to or outer-product the return vector as appropriate
-    //     if (expandedpart.size() == 1) {
-    //       // If there were no wildcards to expand, no point in playing outer-product games
-    //       BOOST_FOREACH (string& basestr, rtn) {
-    //         const string newstr = (!basestr.empty() ? basestr + " * " : "") + expandedpart[0];
-    //       }
-    //     } else {
-    //       // There was a wildcard to expand, so we work harder...
-    //       vector<string> tmp;
-    //       tmp.reserve(expandedpart.size() * rtn.size());
-    //       BOOST_FOREACH (const string& basestr, rtn) {
-    //         BOOST_FOREACH (const string& pdfstr, expandedpart) {
-    //           const string newstr = (!basestr.empty() ? basestr + " * " : "") + pdfstr;
-    //           tmp.push_back(newstr);
-    //         }
-    //       }
-    //       rtn = tmp; //< Update rtn with the next level of Cartesian product from wildcard expansion
-    //     }
-    //   }
-    //   return rtn;
-    // }
-
-
-    /// @brief Decode a single PDF member ID string into a setname,memid pair
-    ///
-    ///  SETA/1      SETA
-    ///   ->          ->
-    ///   <SETA,1>    <SETA,0>
-    pair<string,int> decodePDFStr(const string& pdfstr) {
-      int nmem = 0;
-      const size_t slashpos = pdfstr.find("/");
-      const string setname = trim_copy(pdfstr.substr(0, slashpos));
-      try {
-        if (slashpos != string::npos) {
-          const string smem = pdfstr.substr(slashpos+1);
-          nmem = lexical_cast<int>(smem);
-        }
-      } catch (...) {
-        throw UserError("Could not parse PDF identity string " + pdfstr);
-      }
-      return make_pair(setname, nmem);
-    }
-
-
-    // /// @brief Decode a multiple PDF member ID string into a list of setname,memid pairs
-    // ///
-    // ///   SETA/1 * SETB/0
-    // ///   ->
-    // ///   [<SETA,1>, <SETB,0>]
-    // vector< pair<string,int> > decodePDFsStr(const string& pdfsstr) {
-    //   // Split into multiplicative parts
-    //   vector<string> parts;
-    //   iter_split(parts, pdfsstr, boost::algorithm::first_finder(" * "));
-
-    //   // Create the list of set/id pairs
-    //   vector< pair<string,int> > rtn;
-    //   BOOST_FOREACH (const string& part, parts) {
-    //     rtn.push_back(decodePDFStr(part));
-    //   }
-    //   return rtn;
-    // }
-
-
-  }
-
-
-
   PDF* mkPDF(const string& setname_nmem) {
-    const pair<string,int> idpair = decodePDFStr(setname_nmem);
+    const pair<string,int> idpair = lookupPDF(setname_nmem);
     return mkPDF(idpair.first, idpair.second);
   }
 
@@ -193,7 +89,7 @@ namespace LHAPDF {
 
   Interpolator* mkInterpolator(const string& name) {
     // Convert name to lower case for comparisons
-    const string iname = to_lower_copy(name);
+    const string iname = to_lower(name);
     if (iname == "linear")
       return new BilinearInterpolator();
     else if (iname == "cubic")
@@ -209,22 +105,23 @@ namespace LHAPDF {
 
   Extrapolator* mkExtrapolator(const string& name) {
     // Convert name to lower case for comparisons
-    const string iname = to_lower_copy(name);
-    if (iname == "nearest")
+    const string xname = to_lower(name);
+    if (xname == "nearest")
       return new NearestPointExtrapolator();
-    else if (iname == "error")
+    else if (xname == "error")
       return new ErrExtrapolator();
-    else if (iname == "continuation")
+    else if (xname == "continuation")
       return new ContinuationExtrapolator();
-    else
+    else {
       throw FactoryError("Undeclared extrapolator requested: " + name);
+    }
   }
 
 
   AlphaS* mkAlphaS(const Info& info) {
     AlphaS* as = 0;
 
-    const string itype = to_lower_copy(info.get_entry("AlphaS_Type"));
+    const string itype = to_lower(info.get_entry("AlphaS_Type"));
     if (itype == "analytic") as = new AlphaS_Analytic();
     else if (itype == "ode") as = new AlphaS_ODE();
     else if (itype == "ipol") as = new AlphaS_Ipol();
@@ -280,7 +177,7 @@ namespace LHAPDF {
       throw MetadataError("All quark masses required (either as AlphaS_MQ or MQ) for AlphaS.");
     }
 
-    const string fscheme = to_lower_copy(info.get_entry("AlphaS_FlavorScheme", info.get_entry("FlavorScheme", "variable"))); // default is VFNS
+    const string fscheme = to_lower(info.get_entry("AlphaS_FlavorScheme", info.get_entry("FlavorScheme", "variable"))); // default is VFNS
     const int nflavs = info.get_entry_as<int>("AlphaS_NumFlavors", info.get_entry_as<int>("NumFlavors", 5)); // default is 5 flavour evolution
     if (fscheme == "fixed") as->setFlavorScheme(AlphaS::FIXED, nflavs);
     else if (fscheme == "variable") as->setFlavorScheme(AlphaS::VARIABLE, nflavs);
@@ -336,5 +233,16 @@ namespace LHAPDF {
     return mkAlphaS(*info);
   }
 
+  /// @todo Merge to mkAlphaS(0)?
+  AlphaS* mkBareAlphaS(const std::string& type) {
+    AlphaS* as = 0;
 
+    const string itype = to_lower(type);
+    if (itype == "analytic") as = new AlphaS_Analytic();
+    else if (itype == "ode") as = new AlphaS_ODE();
+    else if (itype == "ipol") as = new AlphaS_Ipol();
+    else throw FactoryError("Undeclared AlphaS requested: " + itype);
+
+    return as;
+  }
 }

@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2014 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_Factories_H
@@ -121,8 +121,8 @@ namespace LHAPDF {
     mkPDFs(setname, rawptrs);
     pdfs.clear();
     pdfs.reserve(rawptrs.size());
-    BOOST_FOREACH (const PDF* p, rawptrs)
-      pdfs.push_back(PTR(p));
+    // for (const PDF* p : rawptrs) pdfs.push_back(PTR(p)); //< Reinstate when C++11 is guaranteed, without flags
+    for (size_t i = 0; i < rawptrs.size(); ++i) pdfs.push_back(PTR(rawptrs[i]));
   }
 
   //@}
@@ -183,6 +183,15 @@ namespace LHAPDF {
   /// Returns a 'new'ed AlphaS by pointer. Unless attached to a PDF,
   /// the caller is responsible for deletion of the created object.
   AlphaS* mkAlphaS(int lhaid);
+
+  /// @brief Make an AlphaS object of the requested type without a PDF reference
+  ///
+  /// No values are initialised and have to be configured by the caller.
+  ///
+  /// The caller is responsible for deletion of the created object.
+  ///
+  /// @todo Actually, should we just make this mkAlphaS(0)?
+  AlphaS* mkBareAlphaS(const std::string& type);
 
   //@}
 
