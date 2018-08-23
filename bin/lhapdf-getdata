@@ -83,7 +83,7 @@ if __name__ == '__main__':
     from optparse import OptionParser
     parser = OptionParser(usage=usage)
     parser.add_option("--repo", help="Base URL of online sets repository (%default)", metavar="URL",
-                      dest="URL", default="http://www.hepforge.org/archive/lhapdf/pdfsets/current")
+                      dest="URL", default="https://www.hepforge.org/archive/lhapdf/pdfsets/current")
     parser.add_option("--dest", help="PDF sets directory to install to (%default)", metavar="DEST",
                       dest="DEST", default=DEFAULT_PDFSETS_DIR)
     parser.add_option("--all", help="Get ALL sets (this will be hundreds of megabytes... be careful!)",
