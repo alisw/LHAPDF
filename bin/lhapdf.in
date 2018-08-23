@@ -21,7 +21,7 @@ major_version = '.'.join(__version__.split('.')[:2])
 
 
 ## Base paths etc. for set and index file downloading
-urlbase = 'http://www.hepforge.org/archive/lhapdf/pdfsets/%s/' % major_version
+urlbase = 'https://www.hepforge.org/archive/lhapdf/pdfsets/%s/' % major_version
 afsbase = '/afs/cern.ch/sw/lcg/external/lhapdfsets/current/'
 cvmfsbase='/cvmfs/sft.cern.ch/lcg/external/lhapdfsets/current/'
 index_filename = 'pdfsets.index'
