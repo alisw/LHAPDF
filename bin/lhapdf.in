@@ -277,7 +277,7 @@ def download_url(source, dest_dir, dryrun=False):
             import urllib2 as urllib
         try:
             u = urllib.urlopen(url)
-            file_size = int(u.info().get('Content-Length')[0])
+            #file_size = int(u.info().get('Content-Length')[0])
         except urllib.URLError:
             e = sys.exc_info()[1]
             logging.error('Unable to download %s: %s' % (url, str(e)))
@@ -286,7 +286,7 @@ def download_url(source, dest_dir, dryrun=False):
         logging.debug('Downloading from %s' % url)
         logging.debug('Downloading to %s' % dest_filepath)
         if dryrun:
-            logging.info('%s [%s]' % (os.path.basename(url), convertBytes(file_size)))
+            #logging.info('%s [%s]' % (os.path.basename(url), convertBytes(file_size)))
             return False
 
         try:
@@ -306,7 +306,7 @@ def download_url(source, dest_dir, dryrun=False):
                     dest_file.write(buffer)
 
                     status  = chr(13) + '%s: ' % os.path.basename(url)
-                    status += r'%s [%3.1f%%]' % (convertBytes(file_size_dl).rjust(10), file_size_dl * 100. / file_size)
+                    #status += r'%s [%3.1f%%]' % (convertBytes(file_size_dl).rjust(10), file_size_dl * 100. / file_size)
                     sys.stdout.write(status+' ')
             except urllib.URLError:
                 e = sys.exc_info()[1]
