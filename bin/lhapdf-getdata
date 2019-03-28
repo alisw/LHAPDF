@@ -34,7 +34,7 @@ def getPDFSetList(url):
         logging.debug(pdflistpage)
         hreq.close()
         import re
-        re_anchor = re.compile(r'^\s*<tr>.*<td><a\s+href="([^"]+)">\1.*$')
+        re_anchor = re.compile(r'^\s*<td\s+class="name"><a.*title="([^"]+)">\1.*$')
         rtn = []
         for line in pdflistpage.splitlines():
             m = re_anchor.match(line)
