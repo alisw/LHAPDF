@@ -1,233 +1,174 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_KnotArray_H
 #define LHAPDF_KnotArray_H
 
 #include "LHAPDF/Exceptions.h"
+#include "LHAPDF/Utils.h"
+
+namespace {
+
+  
+  // Hide some internal functions from outside API view
+
+  // General function to find the knot below a given value
+  size_t indexbelow(double value, const std::vector<double>& knots) {
+    size_t i = upper_bound(knots.begin(), knots.end(), value) - knots.begin();
+    if (i == knots.size()) i -= 1; // can't return the last knot index
+    i -= 1;                // step back to get the knot <= x behaviour
+    return i;
+  }
+
+  
+  int findPidInPids(int pid, const std::vector<int>& pids) {
+    std::vector<int>::const_iterator it = std::find(pids.begin(), pids.end(), pid);
+    if (it == pids.end())
+      return -1;
+    else
+      return std::distance(pids.begin(), it);
+  }
+
+
+}
 
 namespace LHAPDF {
 
-
+  
   /// @brief Internal storage class for PDF data point grids
   ///
   /// We use "array" to refer to the "raw" knot grid, while "grid" means a grid-based PDF.
   /// The "1F" means that this is a single-flavour array
-  class KnotArray1F {
+  class KnotArray{
   public:
+    
+    /// How many flavours are stored in the grid stored
+    size_t size() const { return _shape.back(); }
 
-    /// @name Construction etc.
-    //@{
+    /// How many x knots are there
+    size_t xsize() const { return _shape[0]; }
 
-    /// Default constructor just for std::map insertability
-    KnotArray1F() {}
+    /// How many q2 knots are there
+    size_t q2size() const { return _shape[1]; }
+    
+    /// Is this container empty?
+    bool empty() const { return _grid.empty(); }
+    
+    /// find the largest grid index below given x, such that xknots[index] < x
+    size_t ixbelow(double x) const { return indexbelow(x, _xs); }
 
-    /// Constructor from x and Q2 knot values, and an xf value grid as strided list
-    KnotArray1F(const std::vector<double>& xknots, const std::vector<double>& q2knots, const std::vector<double>& xfs)
-      : _xs(xknots), _q2s(q2knots), _xfs(xfs)
-    {
-      assert(_xfs.size() == size());
-      _synclogs();
+    /// find the largest grid index below given q2, such that q2knots[index] < q2
+    size_t iq2below(double q2) const { return indexbelow(q2, _q2s); }
+
+    /// convenient accessor to the grid values
+    double xf(int ix, int iq2, int ipid) const {
+      return _grid[ix*_shape[2]*_shape[1] + iq2*_shape[2] + ipid];
     }
 
-    /// Constructor of a zero-valued array from x and Q2 knot values
-    KnotArray1F(const std::vector<double>& xknots, const std::vector<double>& q2knots)
-      : _xs(xknots), _q2s(q2knots),
-        _xfs(size(), 0.0)
-    {
-      assert(_xfs.size() == size());
-      _synclogs();
+    /// convenient accessor to the polynomial coefficients, returns reference rather than value, to be able to read multiple adjacent at once
+    const double& coeff(int ix, int iq2, int pid, int in) const {
+      return _coeffs[ix*(_shape[1])*_shape[2]*4 + iq2*_shape[2]*4 + pid*4 + in];
     }
 
-    //@}
+    /// accessor to the internal 'lookup table' for the pid's
+    int lookUpPid(int id) const { return _lookup[id]; }
 
+    double xs(int id) const { return _xs[id]; }
 
-    /// @name x stuff
-    //@{
+    double logxs(int id) const { return _logxs[id]; }
+    
+    double q2s(int id) const { return _q2s[id]; }
 
-    /// x knot setter
-    /// @note Also zeros the xfs array, which is invalidated by resetting the x knots
-    void setxs(const std::vector<double>& xs) {
-      _xs = xs;
-      _synclogs();
-      _xfs = std::vector<double>(size(), 0.0);
+    double logq2s(int id) const { return _logq2s[id]; }
+    
+    size_t shape(int id) const { return _shape[id]; }
+
+    /// check if value within the boundaries of xknots
+    bool inRangeX(double x) const {
+      if (x < _xs.front()) return false;
+      if (x > _xs.back())  return false;
+      return true;
     }
 
-    /// Number of x knots
-    const size_t xsize() const { return _xs.size(); }
+    /// check if value within the boundaries of q2knots
+    bool inRangeQ2(double q2) const {
+      if (q2 < _q2s.front()) return false;
+      if (q2 > _q2s.back())  return false;
+      return true;
+    }
 
-    /// x knot accessor
+    inline int get_pid(int id) const {
+      // hardcoded lookup table for particle ids
+      // -6,...,-1,21/0,1,...,6,22
+      // if id outside of this range, search in list of ids
+      if (-6 <= id && id <= 6) return _lookup[id + 6];
+      else if (id == 21) return _lookup[0 + 6];
+      else if (id == 22) return _lookup[13];
+      else return findPidInPids(id, _pids);
+    }
+
+    bool has_pid(int id) const {
+      return get_pid(id) != -1;
+    }
+    
+    void initPidLookup();
+
+    void fillLogKnots();
+    
+    /// Const accessors to the internal data container
     const std::vector<double>& xs() const { return _xs; }
 
-    /// log(x) knot accessor
     const std::vector<double>& logxs() const { return _logxs; }
 
-    /// @brief Get the index of the closest x knot row <= x
-    ///
-    /// If the value is >= x_max, return i_max-1 (for polynomial spine construction)
-    size_t ixbelow(double x) const {
-      // Test that x is in the grid range
-      if (x < xs().front()) throw GridError("x value " + to_str(x) + " is lower than lowest-x grid point at " + to_str(xs().front()));
-      if (x > xs().back()) throw GridError("x value " + to_str(x) + " is higher than highest-x grid point at " + to_str(xs().back()));
-      // Find the closest knot below the requested value
-      size_t i = upper_bound(xs().begin(), xs().end(), x) - xs().begin();
-      if (i == xs().size()) i -= 1; // can't return the last knot index
-      i -= 1; // have to step back to get the knot <= x behaviour
-      return i;
-    }
-
-    //@}
-
-
-    /// @name Q2 stuff
-    //@{
-
-    /// Q2 knot setter
-    /// @note Also zeros the xfs array, which is invalidated by resetting the Q2 knots
-    void setq2s(const std::vector<double>& q2s) {
-      _q2s = q2s;
-      _synclogs();
-      _xfs = std::vector<double>(size(), 0.0);
-    }
-
-    /// Number of Q2 knots
-    const size_t q2size() const { return _q2s.size(); }
-
-    /// Q2 knot accessor
     const std::vector<double>& q2s() const { return _q2s; }
-
-    /// log(Q2) knot accessor
+    
     const std::vector<double>& logq2s() const { return _logq2s; }
 
-    /// Get the index of the closest Q2 knot row <= q2
-    ///
-    /// If the value is >= q2_max, return i_max-1 (for polynomial spine construction)
-    size_t iq2below(double q2) const {
-      // Test that Q2 is in the grid range
-      if (q2 < q2s().front()) throw GridError("Q2 value " + to_str(q2) + " is lower than lowest-Q2 grid point at " + to_str(q2s().front()));
-      if (q2 > q2s().back()) throw GridError("Q2 value " + to_str(q2) + " is higher than highest-Q2 grid point at " + to_str(q2s().back()));
-      /// Find the closest knot below the requested value
-      size_t i = upper_bound(q2s().begin(), q2s().end(), q2) - q2s().begin();
-      if (i == q2s().size()) i -= 1; // can't return the last knot index
-      i -= 1; // have to step back to get the knot <= q2 behaviour
-      return i;
-    }
+    /// Non const accessors for programmatic filling
+    std::vector<double>& setCoeffs() { return _coeffs; }
 
-    //@}
+    std::vector<double>& setGrid() { return _grid; }
 
+    std::vector<double>& setxknots() { return _xs; }
 
-    /// @name PDF values at (x, Q2) points
-    //@{
+    std::vector<double>& setq2knots() { return _q2s; }
 
-    /// Number of x knots
-    const size_t size() const { return xsize()*q2size(); }
-
-    /// xf value accessor (const)
-    const std::vector<double>& xfs() const { return _xfs; }
-    /// xf value accessor (non-const)
-    std::vector<double>& xfs() { return _xfs; }
-    /// xf value setter
-    void setxfs(const std::vector<double>& xfs) { _xfs = xfs; }
-
-    /// Get the xf value at a particular indexed x,Q2 knot
-    const double& xf(size_t ix, size_t iq2) const { return _xfs[ix*q2size() + iq2]; }
-
-    //@}
-
-
+    std::vector<size_t>& setShape(){ return _shape; }
+    
+    std::vector<int>&    setPids() { return _pids; }
+    
   private:
+    // Shape of the interpolation grid
+    std::vector<size_t> _shape;
+        
+     // Gridvalues
+    std::vector<double> _grid;
 
-    /// Synchronise log(x) and log(Q2) arrays from the x and Q2 ones
-    void _synclogs() {
-      _logxs.resize(_xs.size());
-      _logq2s.resize(_q2s.size());
-      for (size_t i = 0; i < _xs.size(); ++i) _logxs[i] = log(_xs[i]);
-      for (size_t i = 0; i < _q2s.size(); ++i) _logq2s[i] = log(_q2s[i]);
-    }
+    // Storage for the precomputed polynomial coefficients
+    std::vector<double> _coeffs;
+    
+    // order the pids are filled in
+    std::vector<int> _pids;
+    std::vector<int> _lookup;
 
-    /// List of x knots
+    // knots
     std::vector<double> _xs;
-    /// List of Q2 knots
     std::vector<double> _q2s;
-    /// List of log(x) knots
     std::vector<double> _logxs;
-    /// List of log(Q2) knots
     std::vector<double> _logq2s;
-    /// List of xf values across the 2D knot array, stored as a strided [ix][iQ2] 1D array
-    std::vector<double> _xfs;
 
   };
-
-
-  /// @brief A collection of {KnotArray1F}s accessed by PID code
-  ///
-  /// The "NF" means "> 1 flavour", cf. the KnotArray1F name for a single flavour data array.
-  class KnotArrayNF {
-  public:
-
-    /// How many {KnotArray1F}s are stored in this container?
-    size_t size() const { return _map.size(); }
-
-    /// Is this container empty?
-    bool empty() const { return _map.empty(); }
-
-    /// Does this contain a KnotArray1F for PID code @a id?
-    bool has_pid(int id) const {
-      return _map.find(id) != _map.end();
-    }
-
-    /// Get the KnotArray1F for PID code @a id
-    const KnotArray1F& get_pid(int id) const {
-      if (!has_pid(id)) throw FlavorError("Undefined particle ID requested: " + to_str(id));
-      return _map.find(id)->second;
-    }
-
-    /// Convenience accessor for any valid subgrid, to get access to the x/Q2/etc. arrays
-    const KnotArray1F& get_first() const {
-      if (empty()) throw GridError("Tried to access grid indices when no flavour grids were loaded");
-      return _map.begin()->second;
-    }
-
-    /// Get the KnotArray1F for PID code @a id
-    void set_pid(int id, const KnotArray1F& ka) {
-      _map[id] = ka;
-    }
-
-    /// Indexing operator (non-const)
-    KnotArray1F& operator[](int id) { return _map[id]; }
-
-    /// Access the xs array
-    const std::vector<double>& xs() const { return get_first().xs(); }
-    /// Access the log(x)s array
-    const std::vector<double>& logxs() const { return get_first().logxs(); }
-    /// Get the index of the closest x knot column <= x (see KnotArray1F)
-    size_t ixbelow(double x) const { return get_first().ixbelow(x); }
-
-    /// Access the Q2s array
-    const std::vector<double>& q2s() const { return get_first().q2s(); }
-    /// Access the log(Q2)s array
-    const std::vector<double>& logq2s() const { return get_first().logq2s(); }
-    /// Get the index of the closest Q2 knot row <= q2 (see KnotArray1F)
-    size_t iq2below(double q2) const { return get_first().iq2below(q2); }
-
-  private:
-
-    /// Storage
-    std::map<int, KnotArray1F> _map;
-
-  };
-
-
+  
 
   /// Internal storage class for alpha_s interpolation grids
   class AlphaSArray {
   public:
 
     /// @name Construction etc.
-    //@{
+    ///@{
 
     /// Default constructor just for std::map insertability
     AlphaSArray() {}
@@ -236,14 +177,14 @@ namespace LHAPDF {
     AlphaSArray(const std::vector<double>& q2knots, const std::vector<double>& as)
       : _q2s(q2knots), _as(as)
     {
-      _synclogs();
+      _syncq2s();
     }
 
-    //@}
+    ///@}
 
 
     /// @name Q2 stuff
-    //@{
+    ///@{
 
     /// Q2 knot vector accessor
     const std::vector<double>& q2s() const { return _q2s; }
@@ -279,11 +220,11 @@ namespace LHAPDF {
       return i;
     }
 
-    //@}
+    ///@}
 
 
     /// @name alpha_s values at Q2 points
-    //@{
+    ///@{
 
     /// alpha_s value accessor (const)
     const std::vector<double>& alphas() const { return _as; }
@@ -292,11 +233,11 @@ namespace LHAPDF {
     // /// alpha_s value setter
     // void setalphas(const valarray& xfs) { _as = as; }
 
-    //@}
+    ///@}
 
 
     /// @name alpha_s derivatives vs (log)Q2, useful for interpolation
-    //@{
+    ///@{
 
     /// Forward derivative w.r.t. logQ2
     double ddlogq_forward(size_t i) const {
@@ -313,13 +254,13 @@ namespace LHAPDF {
       return 0.5 * (ddlogq_forward(i) + ddlogq_backward(i));
     }
 
-    //@}
+    ///@}
 
 
   private:
 
     /// Synchronise the log(Q2) array from the Q2 one
-    void _synclogs() {
+    void _syncq2s() {
       _logq2s.resize(_q2s.size());
       for (size_t i = 0; i < _q2s.size(); ++i) _logq2s[i] = log(_q2s[i]);
     }
@@ -332,7 +273,5 @@ namespace LHAPDF {
     std::vector<double> _as;
 
   };
-
-
 }
 #endif

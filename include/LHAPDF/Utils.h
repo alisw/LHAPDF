@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_Utils_H
@@ -18,11 +18,8 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
-#include <fstream>
 #include <limits>
 #include <cmath>
-// System includes
-#include "sys/stat.h"
 
 
 /// Namespace for all LHAPDF functions and classes
@@ -33,15 +30,19 @@ namespace LHAPDF {
   using namespace std;
 
 
+  /// @defgroup utils Internal utility functions
+  ///@{
+
   /// @name String handling utility functions
-  //@{
+  ///@{
 
   /// When lexical_cast goes bad
   struct bad_lexical_cast : public std::runtime_error {
+    /// Constructor
     bad_lexical_cast(const std::string& what) : std::runtime_error(what) {}
   };
 
-  /// @brief Convert between any types via stringstream
+  /// @brief Convert between types via stringstream
   template<typename T, typename U>
   T lexical_cast(const U& in) {
     try {
@@ -85,7 +86,7 @@ namespace LHAPDF {
     string rtn;
     for (size_t i = 0; i < svec.size(); ++i) {
       rtn += svec[i];
-      if (i < svec.size()-1) rtn += ", ";
+      if (i < svec.size()-1) rtn += sep;
     }
     return rtn;
   }
@@ -97,8 +98,8 @@ namespace LHAPDF {
     while (true) {
       const size_t delim_pos = tmp.find(sep);
       if (delim_pos == string::npos) break;
-      const string s = tmp.substr(0, delim_pos);
-      if (!s.empty()) rtn.push_back(s); // Don't insert "empties"
+      const string stmp = tmp.substr(0, delim_pos);
+      if (!stmp.empty()) rtn.push_back(stmp); // Don't insert "empties"
       tmp.replace(0, delim_pos+1, ""); // Remove already-processed part
     }
     if (!tmp.empty()) rtn.push_back(tmp); // Don't forget the trailing component!
@@ -147,29 +148,20 @@ namespace LHAPDF {
     return rtn;
   }
 
-  //@}
+  ///@}
 
 
-  /// @name Generic path functions in the LHAPDF namespace
-  //@{
+  /// @name Filesystem utils
+  ///@{
 
   /// Check if a path @a p (either file or dir) exists
-  inline bool path_exists(const std::string& p) {
-    struct stat st;
-    return (stat(p.c_str(), &st) == 0);
-  }
+  bool path_exists(const std::string& p,int mode=0);
 
   /// Check if a file @a p exists
-  inline bool file_exists(const std::string& p) {
-    struct stat st;
-    return (stat(p.c_str(), &st) == 0 && S_ISREG(st.st_mode));
-  }
+  bool file_exists(const std::string& p,int mode=0);
 
   /// Check if a dir @a p exists
-  inline bool dir_exists(const std::string& p) {
-    struct stat st;
-    return (stat(p.c_str(), &st) == 0 && S_ISDIR(st.st_mode));
-  }
+  bool dir_exists(const std::string& p,int mode=0);
 
   /// Operator for joining strings @a a and @a b with filesystem separators
   inline std::string operator / (const std::string& a, const std::string& b) {
@@ -205,11 +197,11 @@ namespace LHAPDF {
 
   /// @todo Add an abspath(p) function
 
-  //@}
+  ///@}
 
 
-  /// @name Math functions in the LHAPDF namespace
-  //@{
+  /// @name Math functions
+  ///@{
 
   /// Convenience function for squaring (of any type)
   template <typename N>
@@ -236,11 +228,11 @@ namespace LHAPDF {
   /// Quantiles of the chi-squared probability distribution function
   double chisquared_quantile(double p, double ndf);
 
-  //@}
+  ///@}
 
 
-  /// @name Container handling helpers
-  //@{
+  /// @name Container utils
+  ///@{
 
   /// Does the vector<T> @a container contain @a item?
   template <typename T>
@@ -302,7 +294,8 @@ namespace LHAPDF {
   //                            has_begin_end<T>::beg_value && has_begin_end<T>::end_value>
   // { };
 
-  //@}
+  ///@}
+
 
 }
 #endif

@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_PDFSet_H
@@ -15,32 +15,94 @@
 
 namespace LHAPDF {
 
+  /// CL percentage for a Gaussian 1-sigma
+  const double CL1SIGMA = 100*erf(1/sqrt(2));
+
 
   // Forward declaration
   class PDF;
 
 
-  /// Structure for storage of uncertainty info calculated over a PDF error set
+  /// @defgroup uncertainties Calculating PDF uncertainties
+  ///
+  /// See the PDFSet class and its PDFSet::uncertainty functions for usage.
+  /// @{
+
+
+  /// @brief Structure for storage of uncertainty info calculated over a PDF error set
+  ///
+  /// Used by the PDFSet::uncertainty functions.
   struct PDFUncertainty {
+    using ErrPairs = std::vector<std::pair<double,double>>;
+
     /// Constructor
     PDFUncertainty(double cent=0, double eplus=0, double eminus=0, double esymm=0, double scalefactor=1,
-		   double eplus_pdf=0, double eminus_pdf=0, double esymm_pdf=0, double e_par=0)
+                   double eplus_pdf=0, double eminus_pdf=0, double esymm_pdf=0,
+                   double eplus_par=0, double eminus_par=0, double esymm_par=0)
       : central(cent), errplus(eplus), errminus(eminus), errsymm(esymm), scale(scalefactor),
-	errplus_pdf(eplus_pdf), errminus_pdf(eminus_pdf), errsymm_pdf(esymm_pdf), err_par(e_par)
+        errplus_pdf(eplus_pdf), errminus_pdf(eminus_pdf), errsymm_pdf(esymm_pdf),
+        errplus_par(eplus_par), errminus_par(eminus_par), errsymm_par(esymm_par)
     {    }
+
     /// Variables for the central value, +ve, -ve & symmetrised errors, and a CL scalefactor
     double central, errplus, errminus, errsymm, scale;
-    /// Add extra variables for separate PDF and parameter variation errors with combined sets
-    double errplus_pdf, errminus_pdf, errsymm_pdf, err_par;
+
+    /// Variables for separate PDF and parameter variation errors with combined sets
+    double errplus_pdf, errminus_pdf, errsymm_pdf;
+    double errplus_par, errminus_par, errsymm_par;
+    double err_par; ///< @deprecated Remove redundant err_par; use errsymm_par
+
+    /// Full error-breakdown of all quadrature uncertainty components, as (+,-) pairs
+    ErrPairs errparts;
   };
 
 
-  /// Class for PDF set metadata and manipulation
+
+  /// @brief Structure encoding the structure of the PDF error-set
+  struct PDFErrInfo {
+    using EnvPart = std::pair<std::string, size_t>;
+    using EnvParts = std::vector<EnvPart>;
+    using QuadParts = std::vector<EnvParts>;
+
+    /// Constructor
+    PDFErrInfo(QuadParts parts, double cl, const std::string& errtypestr="")
+      : qparts(parts), conflevel(cl), errtype(errtypestr)
+    {    }
+
+    /// Default constructor (for STL, Cython, etc.)
+    PDFErrInfo() {}
+
+    /// Error-set quadrature parts
+    QuadParts qparts;
+
+    /// Default confidence-level
+    double conflevel;
+
+    /// Error-type annotation
+    std::string errtype;
+
+    /// Calculated name of a quadrature part
+    std::string coreType() const { return qpartName(0); }
+
+    /// Calculated name of a quadrature part
+    std::string qpartName(size_t iq) const;
+    /// Calculated names of all quadrature parts
+    std::vector<std::string> qpartNames() const;
+
+    /// Number of core-set members
+    size_t nmemCore() const;
+    /// Number of par-set members
+    size_t nmemPar() const;
+
+  };
+
+  /// @}
+
+
+
+  /// Class for PDF-set metadata and manipulation
   class PDFSet : public Info {
   public:
-
-    /// @name Creation and deletion
-    //@{
 
     /// Default constructor (for container compatibility)
     /// @todo Remove?
@@ -50,11 +112,9 @@ namespace LHAPDF {
     /// @todo Remove?
     PDFSet(const std::string& setname);
 
-    //@}
-
 
     /// @name PDF set metadata specialisations
-    //@{
+    /// @{
 
     /// @brief PDF set name
     ///
@@ -83,6 +143,9 @@ namespace LHAPDF {
       return to_lower(get_entry("ErrorType", "UNKNOWN"));
     }
 
+    /// Get the structured decomposition of the error-type string
+    PDFErrInfo errorInfo() const;
+
     /// @brief Get the confidence level of the Hessian eigenvectors, in percent.
     ///
     /// If not defined, assume 1-sigma = erf(1/sqrt(2)) =~ 68.268949% by default,
@@ -97,7 +160,14 @@ namespace LHAPDF {
       return get_entry_as<unsigned int>("NumMembers");
     }
 
-    //@}
+    /// Number of error members in this set
+    ///
+    /// @note Equal to size()-1
+    size_t errSize() const {
+      return size()-1;
+    }
+
+    /// @}
 
 
     /// Summary printout
@@ -105,7 +175,7 @@ namespace LHAPDF {
 
 
     /// @name Creating PDF members
-    //@{
+    /// @{
 
     /// Make the nth PDF member in this set, returned by pointer
     ///
@@ -177,14 +247,14 @@ namespace LHAPDF {
       return rtn;
     }
 
-    //@}
+    /// @}
 
 
     /// @todo Add AlphaS getter for set-level alphaS?
 
 
     /// @name Generic metadata cascading mechanism
-    //@{
+    /// @{
 
     /// Can this Info object return a value for the given key? (it may be defined non-locally)
     bool has_key(const std::string& key) const {
@@ -202,13 +272,17 @@ namespace LHAPDF {
       return Info::get_entry(key, fallback);
     }
 
-    //@}
+    /// @}
 
 
     /// @name PDF set uncertainty functions
-    //@{
+    ///
+    /// See the @ref uncertainties group for more details
+    /// @{
 
-    /// @brief Calculate central value and error from vector @c values with appropriate formulae for this set
+    /// @brief Calculate the central value and PDF uncertainty on an observable.
+    ///
+    /// @warning The @c values vector corresponds to the members of this PDF set and must be ordered accordingly.
     ///
     /// In the Hessian approach, the central value is the best-fit
     /// "values[0]" and the uncertainty is given by either the symmetric or
@@ -218,7 +292,7 @@ namespace LHAPDF {
     /// given by the mean and is not necessarily "values[0]" for quantities with a non-linear
     /// dependence on PDFs, while the uncertainty is given by the standard deviation.
     ///
-    /// Optional argument @c clpct is used to rescale uncertainties to a
+    /// Optional argument @c cl is used to rescale uncertainties to a
     /// particular confidence level (in percent); a negative number will rescale to the
     /// default CL for this set.
     ///
@@ -233,16 +307,80 @@ namespace LHAPDF {
     /// variation uncertainties is available.  The parameter variation
     /// uncertainties are computed from the last 2*n members of the set, with n
     /// the number of parameters.
+    ///
+    /// See the @ref uncertainties group for more details
+    ///
+    /// @todo Add option to restrict replica mean & stddev calculation to a central CI set?
     PDFUncertainty uncertainty(const std::vector<double>& values,
-                               double cl=100*erf(1/sqrt(2)), bool alternative=false) const;
+                               double cl=CL1SIGMA, bool alternative=false) const {
+      PDFUncertainty rtn;
+      uncertainty(rtn, values, cl, alternative);
+      return rtn;
+    }
 
-    /// Calculate PDF uncertainties (as above), with efficient no-copy return to the @c rtn argument.
+
+    // // Trick to ensure no calls with implicit type conversion
+    // template <typename T1, typename T2>
+    // void uncertainty(const std::vector<double>& values, T1, T2) const = delete;
+
+    // /// Alternative form allowing the alternative computation with default CL
+    // PDFUncertainty uncertainty(const std::vector<double>& values,
+    //                            bool alternative, double cl=CL1SIGMA) const {
+    //   return uncertainty(values, cl, alternative);
+    // }
+
+
+    /// @brief Calculate the PDF uncertainty on an observable (as above), with efficient no-copy return to the @c rtn argument.
+    ///
+    /// @warning The @c values vector corresponds to the members of this PDF set and must be ordered accordingly.
+    ///
     /// @todo For real efficiency, the chaining of these functions should be the other way around
+    ///
+    /// See the @ref uncertainties group for more details
     void uncertainty(PDFUncertainty& rtn,
                      const std::vector<double>& values,
-                     double cl=100*erf(1/sqrt(2)), bool alternative=false) const {
-      rtn = uncertainty(values, cl, alternative);
+                     double cl=CL1SIGMA, bool alternative=false) const;
+
+    // // Trick to ensure no calls with implicit type conversion
+    // template <typename T1, typename T2>
+    // void uncertainty(PDFUncertainty& rtn, const std::vector<double>& values, T1, T2) const = delete;
+
+    // /// Alternative form allowing the alternative computation with default CL
+    // void uncertainty(PDFUncertainty& rtn,
+    //                  const std::vector<double>& values,
+    //                  bool alternative, double cl=CL1SIGMA) const {
+    //   uncertainty(rtn, values, cl, alternative);
+    // }
+
+
+    /// @brief Calculate PDF uncertainties on multiple observables at once.
+    ///
+    /// The @c observables_values nested vector is a list of variation-value
+    /// lists, with the first (outer) index corresponding to the M observables,
+    /// e.g. a set of differential-observable bins, and the inner index the N PDF
+    /// members.
+    ///
+    /// The return value is an M-element vector of PDFUncertainty summaray
+    /// structs, one per observable.
+    ///
+    /// @warning The inner @c _values vector corresponds to the members of this
+    /// PDF set and must be ordered accordingly.
+    std::vector<PDFUncertainty> uncertainties(const std::vector<std::vector<double>>& observables_values,
+                                              double cl=CL1SIGMA, bool alternative=false) const {
+      std::vector<PDFUncertainty> rtn;
+      uncertainties(rtn, observables_values, cl, alternative);
+      return rtn;
     }
+
+
+    /// @brief Calculate multiple PDF uncertainties (as above), with efficient no-copy return to the @c rtn argument.
+    ///
+    /// @warning The inner @c _values vector corresponds to the members of this
+    /// PDF set and must be ordered accordingly.
+    void uncertainties(std::vector<PDFUncertainty>& rtn,
+                       const std::vector<std::vector<double>>& observables_values,
+                       double cl=CL1SIGMA, bool alternative=false) const;
+
 
     /// @brief Calculate the PDF correlation between @c valuesA and @c valuesB using appropriate formulae for this set.
     ///
@@ -250,6 +388,8 @@ namespace LHAPDF {
     /// quantities A and B are {anticorrelated,uncorrelated,correlated}, respectively.
     ///
     /// For a combined set, the parameter variations are not included in the calculation of the correlation.
+    ///
+    /// See the @ref uncertainties group for more details
     double correlation(const std::vector<double>& valuesA, const std::vector<double>& valuesB) const;
 
     /// @brief Generate a random value from Hessian @c values and Gaussian random numbers.
@@ -274,22 +414,28 @@ namespace LHAPDF {
     /// Use of this routine with a non-Hessian PDF set will throw a UserError.
     ///
     /// For a combined set, the parameter variations are not included in the generation of the random value.
+    ///
+    /// See the @ref uncertainties group for more details
     double randomValueFromHessian(const std::vector<double>& values, const std::vector<double>& randoms, bool symmetrise=true) const;
 
 
-    /// Check that the PdfType of each member matches the ErrorType of the set.
+    /// Check that the type of each member matches the ErrorType of the set.
+    ///
     /// @todo We need to make the signature clearer -- what is the arg? Why not
     ///   automatically check the members? Why not a plural name? Why not on PDF?
     ///   "Hiding" the name for now with the leading underscore.
     void _checkPdfType(const std::vector<string>& pdftypes) const;
 
-    //@}
+    /// @}
 
 
   private:
 
     /// Name of this set
     std::string _setname;
+
+    /// Cached PDF error-info breakdown struct
+    mutable PDFErrInfo _errinfo;
 
   };
 

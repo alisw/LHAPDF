@@ -5,8 +5,8 @@
 import lhapdf
 
 ## Getting a PDF member object
-p = lhapdf.mkPDF("CT10", 0)
-p = lhapdf.mkPDF("CT10/0")
+p = lhapdf.mkPDF("CT10nlo", 0)
+p = lhapdf.mkPDF("CT10nlo/0")
 
 ## Gluon PDF querying at x=0.001, Q2=10000
 print(p.xfxQ2(21, 1e-3, 1e4))

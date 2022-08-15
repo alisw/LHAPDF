@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_Factories_H
@@ -23,57 +23,11 @@ namespace LHAPDF {
   class AlphaS;
 
 
-  /// @name Factory functions for various Info objects
-  //@{
+  /// @defgroup factories Factory functions
+  ///@{
 
-  /// Get the global configuration object
-  ///
-  /// The global config is populated by reading from lhapdf.conf if it is found
-  /// in the search paths. It is a singleton, hence the 'get' rather than 'mk'
-  /// function name.
-  ///
-  /// @note The LHAPDF system is responsible for deletion of the returned
-  /// object. Do NOT delete it yourself! Hence the return by reference rather
-  /// than pointer.
-  // Config& getConfig();
-  Info& getConfig();
-
-
-  /// Get the PDFSet with the given set name.
-  ///
-  /// Returns a PDFSet by reference. When this function is used for
-  /// access, only one PDFSet object is made per set name... hence the
-  /// 'get' rather than 'mk' function name.
-  ///
-  /// This function is intended particularly for use where it would be
-  /// inefficient to have to repeatedly construct a PDFSet by name. The
-  /// canonical use case is internal: the Info system uses this to ensure that
-  /// cascading of config settings is efficient, and also allows the automatic
-  /// application of set-level changes to all PDF member objects in that set.
-  ///
-  /// @note The LHAPDF system is responsible for deletion of the returned
-  /// object. Do NOT delete it yourself! Hence the return by reference rather
-  /// than pointer.
-  PDFSet& getPDFSet(const std::string& setname);
-
-
-  /// Create a new Info object for the given set name and member number.
-  ///
-  /// Returns a 'new'ed Info by pointer.
-  /// The caller is responsible for deletion of the created object.
-  PDFInfo* mkPDFInfo(const std::string& setname, int member);
-
-  /// Create a new Info object with the given LHAPDF ID code.
-  ///
-  /// Returns a 'new'ed Info by pointer.
-  /// The caller is responsible for deletion of the created object.
-  PDFInfo* mkPDFInfo(int lhaid);
-
-  //@}
-
-
-  /// @name Factory functions for making single PDF members
-  //@{
+  /// @defgroup factories_pdf Making single PDFs
+  ///@{
 
   /// Create a new PDF with the given PDF set name and member ID.
   ///
@@ -100,11 +54,28 @@ namespace LHAPDF {
   /// The caller is responsible for deletion of the created object.
   PDF* mkPDF(const std::string& setname_nmem);
 
-  //@}
+  ///@}
 
 
-  /// @name Factory functions for making all PDF members in a set
-  //@{
+  /// @defgroup factories_pdfs Making whole PDF sets
+  ///@{
+
+  /// Get the PDFSet with the given set name.
+  ///
+  /// Returns a PDFSet by reference. When this function is used for
+  /// access, only one PDFSet object is made per set name... hence the
+  /// 'get' rather than 'mk' function name.
+  ///
+  /// This function is intended particularly for use where it would be
+  /// inefficient to have to repeatedly construct a PDFSet by name. The
+  /// canonical use case is internal: the Info system uses this to ensure that
+  /// cascading of config settings is efficient, and also allows the automatic
+  /// application of set-level changes to all PDF member objects in that set.
+  ///
+  /// @note The LHAPDF system is responsible for deletion of the returned
+  /// object. Do NOT delete it yourself! Hence the return by reference rather
+  /// than pointer.
+  PDFSet& getPDFSet(const std::string& setname);
 
   /// Get all PDFs in a named set (return by filling the supplied vector).
   void mkPDFs(const std::string& setname, std::vector<PDF*>& pdfs);
@@ -125,11 +96,41 @@ namespace LHAPDF {
     for (size_t i = 0; i < rawptrs.size(); ++i) pdfs.push_back(PTR(rawptrs[i]));
   }
 
-  //@}
+  ///@}
 
 
-  /// @name Factory functions for making grid interpolators/extrapolators
-  //@{
+  /// @defgroup factories_info Making metadata objects
+  ///@{
+
+  /// Get the global configuration object
+  ///
+  /// The global config is populated by reading from lhapdf.conf if it is found
+  /// in the search paths. It is a singleton, hence the 'get' rather than 'mk'
+  /// function name.
+  ///
+  /// @note The LHAPDF system is responsible for deletion of the returned
+  /// object. Do NOT delete it yourself! Hence the return by reference rather
+  /// than pointer.
+  // Config& getConfig();
+  Info& getConfig();
+
+  /// Create a new Info object for the given set name and member number.
+  ///
+  /// Returns a 'new'ed Info by pointer.
+  /// The caller is responsible for deletion of the created object.
+  PDFInfo* mkPDFInfo(const std::string& setname, int member);
+
+  /// Create a new Info object with the given LHAPDF ID code.
+  ///
+  /// Returns a 'new'ed Info by pointer.
+  /// The caller is responsible for deletion of the created object.
+  PDFInfo* mkPDFInfo(int lhaid);
+
+  ///@}
+
+
+  /// @defgroup factories_ipolxpol Making grid interpolators/extrapolators
+  ///@{
 
   /// Interpolator factory
   ///
@@ -144,9 +145,11 @@ namespace LHAPDF {
   /// the caller is responsible for deletion of the created object.
   Extrapolator* mkExtrapolator(const std::string& name);
 
+  ///@}
 
-  /// @name Factory functions for making AlphaS objects
-  //@{
+
+  /// @defgroup factories_alphas Making AlphaS objects
+  ///@{
 
   /// @brief Make an AlphaS object from an Info object
   ///
@@ -193,8 +196,9 @@ namespace LHAPDF {
   /// @todo Actually, should we just make this mkAlphaS(0)?
   AlphaS* mkBareAlphaS(const std::string& type);
 
-  //@}
+  ///@}
 
+  ///@}
 
 }
 #endif

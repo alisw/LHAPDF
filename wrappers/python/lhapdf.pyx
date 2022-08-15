@@ -1,17 +1,16 @@
 #cython: embedsignature=True, c_string_type=str, c_string_encoding=utf8
 
+from __future__ import print_function
+
 cimport clhapdf as c
-from clhapdf cimport FlavorScheme
+from clhapdf cimport FlavorScheme as cFlavorScheme
 from libcpp.string cimport string
 from libcpp.vector cimport vector
+
 try:
     from itertools import izip as zip
 except ImportError: # python 3.x version
     pass
-
-# For some reason this has to be declared again in order for everything to work...
-ctypedef enum FlavorScheme:
-    FIXED, VARIABLE
 
 def text_encode(text):
     if isinstance(text, unicode):
@@ -21,6 +20,17 @@ def text_encode(text):
     else:
         raise ValueError("Requires text input")
 
+
+
+cpdef enum FlavorScheme:
+    # "Available flavour-number schemes for alpha_s running"
+    FIXED = 0, VARIABLE
+
+cpdef enum PIDCode:
+    # "Standard PDF parton ID codes"
+    ATOP=-6, ABOTTOM=-5, ACHARM=-4, ASTRANGE=-3, AUP=-2, ADOWN=-1,
+    GLUON=0,
+    DOWN=1, UP=2, STRANGE=3, CHARM=4, BOTTOM=5, TOP=6
 
 
 cdef class PDF:
@@ -87,6 +97,7 @@ cdef class PDF:
     #     cdef c.AlphaS* ptr = &self._ptr.alphaS()
     #     cdef AlphaS obj = AlphaS.__new__(AlphaS)
     #     obj.set_ptr(ptr)
+    #     obj.set_parent(self)
     #     return obj
 
     def alphasQ(self, q):
@@ -225,6 +236,7 @@ cdef class PDF:
     cdef _info(self):
         cdef PDFInfo obj = PDFInfo.__new__(PDFInfo)
         obj.set_ptr(&self._ptr.info())
+        obj.set_parent(self)
         return obj
 
     def info(self):
@@ -261,32 +273,202 @@ cdef class Info:
     #     return self._ptr.get_entry(key)
 
     def get_entry(self, key, fallback=None):
-        "Returns metadata entry for this key if it exists, otherwise returns a fallback value"
-        rtn = self._ptr.get_entry(text_encode(key), text_encode(str(fallback)))
-        return rtn if str(rtn) != str(fallback) else fallback
+        """\
+        Returns metadata entry for this key if it exists, otherwise returns a fallback value.
+
+        The string will be automatically converted to Python native types as far as possible
+        -- more complex types are possible if the yaml module is installed.
+        """
+        rtn = fallback
+        try:
+            rtn = self._ptr.get_entry(text_encode(key), text_encode(str(fallback)))
+            try:
+                import ast
+                rtn = ast.literal_eval(rtn)
+            except:
+                try:
+                    import yaml
+                    rtn = yaml.full_load(rtn)
+                except:
+                    pass
+        except:
+            pass
+        return rtn
 
     def set_entry(self, key, value):
         "Set a metadata key"
         self._ptr.set_entry(text_encode(key), text_encode(str(value)))
 
 
-class PDFUncertainty:
+cdef class PDFUncertainty:
     """\
     A simple struct containing components of a value with uncertainties calculated
-    from a PDF set. Attributes are central, errplus, errminus, errsymm, and scale.
+    from a PDF set.
+
+    Attributes are central, errplus, errminus, errsymm, and scale.
     Extra attributes to return the separate PDF and parameter errors for combined
-    PDF+parameter sets are errplus_pdf, errminus_pdf, errsymm_pdf and err_par.
+    PDF+parameter sets are errplus_pdf, errminus_pdf, errsymm_pdf, and
+    errplus_par, errminus_par, errsymm_par. The full breakdown of quadrature
+    error components is in errparts.
+
+    Convenience attributes are provided for returning the maximum and minimum
+    values in the error range (as opposed to the size of deviations from the central
+    value) and for returning pairs of down/up errors and min/max values.
     """
-    def __init__(self, central=0.0, errplus=0.0, errminus=0.0, errsymm=0.0, scale=0.0, errplus_pdf=0.0, errminus_pdf=0.0, errsymm_pdf=0.0, err_par=0.0):
-        self.central  = central
-        self.errplus  = errplus
-        self.errminus = errminus
-        self.errsymm  = errsymm
-        self.scale    = scale
-        self.errplus_pdf  = errplus_pdf
-        self.errminus_pdf = errminus_pdf
-        self.errsymm_pdf  = errsymm_pdf
-        self.err_par       = err_par
+    cdef c.PDFUncertainty* _ptr
+    cdef set_ptr(self, c.PDFUncertainty* ptr):
+        self._ptr = ptr
+
+    def __dealloc__(self):
+        pass
+
+    @property
+    def central(self):
+        return self._ptr.central
+
+    @property
+    def errplus(self):
+        return self._ptr.errplus
+
+    @property
+    def errminus(self):
+        return self._ptr.errminus
+
+    @property
+    def errsymm(self):
+        return self._ptr.errsymm
+
+    @property
+    def scale(self):
+        return self._ptr.scale
+
+    @property
+    def errplus_pdf(self):
+        return self._ptr.errplus_pdf
+
+    @property
+    def errminus_pdf(self):
+        return self._ptr.errminus_pdf
+
+    @property
+    def errsymm_pdf(self):
+        return self._ptr.errsymm_pdf
+
+    @property
+    def errplus_par(self):
+        return self._ptr.errplus_par
+
+    @property
+    def errminus_par(self):
+        return self._ptr.errminus_par
+
+    @property
+    def errsymm_par(self):
+        return self._ptr.errsymm_par
+
+    # Deprecated: remove
+    @property
+    def err_par(self):
+        return self._ptr.err_par
+
+    @property
+    def errparts(self):
+        return self._ptr.errparts
+
+    #-------------
+
+    @property
+    def errs(self):
+        return [self.errminus, self.errplus]
+
+    @property
+    def errs_pdf(self):
+        return [self.errminus_pdf, self.errplus_pdf]
+
+    @property
+    def errmin(self):
+        return self.central - self.errminus
+
+    @property
+    def errmax(self):
+        return self.central + self.errplus
+
+    @property
+    def errrange(self):
+        return [self.errmin, self.errmax]
+
+    @property
+    def errmin_pdf(self):
+        return self.central - self.errminus_pdf
+
+    @property
+    def errmax_pdf(self):
+        return self.central + self.errplus_pdf
+
+    @property
+    def errrange_pdf(self):
+        return [self.errmin_pdf, self.errmax_pdf]
+
+    @property
+    def errmin_par(self):
+        return self.central - self.errminus_par
+
+    @property
+    def errmax_par(self):
+        return self.central + self.errplus_par
+
+    @property
+    def errrange_par(self):
+        return [self.errmin_par, self.errmax_par]
+
+
+
+cdef class PDFErrInfo:
+    """\
+    A struct giving the breakdown of error computations across the PDF error-set
+    members. The general error-type string is parsed into quadrature components,
+    each of which is a signed pair computed via one-sided, symmetrised, or enveloped
+    bands from subsets of PDF members wrt the nominal.
+    """
+    cdef c.PDFErrInfo* _ptr
+    cdef set_ptr(self, c.PDFErrInfo* ptr):
+        self._ptr = ptr
+
+    def __dealloc__(self):
+        pass
+
+    @property
+    def qparts(self):
+        return self._ptr.qparts
+
+    @property
+    def confLevel(self):
+        return self._ptr.conflevel
+
+    @property
+    def errType(self):
+        return self._ptr.errtype
+
+    @property
+    def coreType(self):
+        return self._ptr.coreType()
+
+    # @property
+    # def qpartName(self, index):
+    #     return self._ptr.qpartName(index)
+
+    @property
+    def qpartNames(self):
+        return self._ptr.qpartNames()
+
+    @property
+    def nmemCore(self):
+        return self._ptr.nmemCore()
+
+    @property
+    def nmemPar(self):
+        return self._ptr.nmemPar()
+
 
 
 cdef class PDFSet:
@@ -312,6 +494,11 @@ cdef class PDFSet:
         return self._ptr.size()
 
     @property
+    def errSize(self):
+        "The number of error members in this set."
+        return self._ptr.errSize()
+
+    @property
     def name(self):
         "Name of this PDF's containing set."
         return self._ptr.name()
@@ -335,6 +522,14 @@ cdef class PDFSet:
     def errorType(self):
         "Type of error treatment in this PDF set."
         return self._ptr.errorType()
+
+    @property
+    def errorInfo(self):
+        "Type of error treatment in this PDF set."
+        cdef c.PDFErrInfo ei = self._ptr.errorInfo()
+        pei = PDFErrInfo()
+        pei.set_ptr(&ei)
+        return pei
 
     @property
     def errorConfLevel(self):
@@ -385,18 +580,23 @@ cdef class PDFSet:
 
     def uncertainty(self, vals, cl=68.268949, alternative=False):
         """\
-	Return a PDFUncertainty object corresponding to central value and errors computed
+        Return a PDFUncertainty object corresponding to central value and errors computed
         from the vals list. If unspecified (as a percentage), the confidence level cl defaults
-        to 1-sigma. For replicas, by default (alternative=False) the central value is given by
+        to 1-sigma.
+
+        For replicas, by default (alternative=False) the central value is given by
         the mean and the uncertainty by the standard deviation (possibly rescaled to cl), but
         setting alternative=True will instead construct a confidence interval from the
         probability distribution of replicas, with the central value given by the median.
-        For a combined PDF+parameter set, the parameter variation uncertainties are computed
-        from the last 2*npar set members, where npar is the number of parameters, and a
-        breakdown of the separate PDF and parameter variation uncertainties is available.
-	"""
+
+        A breakdown of uncertainties into quadrature components is available from the
+        PDFUncertainty object, grouped as per the qParts from errorInfo() -> PDFErrInfo.
+        """
         cdef c.PDFUncertainty unc = self._ptr.uncertainty(vals, cl, alternative)
-        return PDFUncertainty(unc.central, unc.errplus, unc.errminus, unc.errsymm, unc.scale, unc.errplus_pdf, unc.errminus_pdf, unc.errsymm_pdf, unc.err_par)
+        # return PDFUncertainty(unc.central, unc.errplus, unc.errminus, unc.errsymm, unc.scale, unc.errplus_pdf, unc.errminus_pdf, unc.errsymm_pdf, unc.err_par)
+        punc = PDFUncertainty()
+        punc.set_ptr(&unc)
+        return punc
 
     def correlation(self, valsA, valsB):
         """Return the PDF correlation between valsA and valsB using appropriate formulae for this set."""
@@ -412,125 +612,146 @@ cdef class PDFSet:
 
 
 
-cdef class PDFInfo:
+cdef class PDFInfo(Info):
     """\
     A class handling the metadata that defines a given PDF.
     """
 
-    cdef c.PDFInfo* _ptr
-    cdef set_ptr(self, c.PDFInfo* ptr):
-        self._ptr = ptr
+    cdef object _parent
 
-    # def metadata(self):
-    #     "Return the metadata in the .info file"
-    #     return self._ptr.metadata()
+    cdef set_parent(self, parent):
+        # Keep a reference to the parent PDF object to prevent python from removing it.
+        self._parent = parent
 
-    def has_key(self, key):
-        "Return whether or not metadata for this key exists"
-        return self._ptr.has_key(text_encode(key))
+    # cdef c.PDFInfo* _ptr
+    # cdef set_ptr(self, c.PDFInfo* ptr):
+    #     self._ptr = ptr
 
-    def has_key_local(self, key):
-        "Returns whether or not metadata for this key exists at a local level (config/set/member)"
-        return self._ptr.has_key_local(text_encode(key))
+    # # def metadata(self):
+    # #     "Return the metadata in the .info file"
+    # #     return self._ptr.metadata()
 
-    # def get_entry(self, key):
-    #     "Returns metadata entry for this key"
-    #     return self._ptr.get_entry(key)
+    # def has_key(self, key):
+    #     "Return whether or not metadata for this key exists"
+    #     return self._ptr.has_key(text_encode(key))
 
-    def get_entry(self, key, fallback=None):
-        "Returns metadata entry for this key if it exists, otherwise returns a fallback value"
-        rtn = self._ptr.get_entry(text_encode(key), text_encode(str(fallback)))
-        return rtn if str(rtn) != str(fallback) else fallback
+    # def has_key_local(self, key):
+    #     "Returns whether or not metadata for this key exists at a local level (config/set/member)"
+    #     return self._ptr.has_key_local(text_encode(key))
+
+    # # def get_entry(self, key):
+    # #     "Returns metadata entry for this key"
+    # #     return self._ptr.get_entry(key)
+
+    # def get_entry(self, key, fallback=None):
+    #     "Returns metadata entry for this key if it exists, otherwise returns a fallback value"
+    #     rtn = self._ptr.get_entry(text_encode(key), text_encode(str(fallback)))
+    #     return rtn if str(rtn) != str(fallback) else fallback
 
 
 
 cdef class AlphaS:
-     """\
-     Interface to alpha_s calculations using various schemes.
-     """
-     cdef c.AlphaS* _ptr
-     cdef set_ptr(self, c.AlphaS* ptr):
-         self._ptr = ptr
+    """\
+    Interface to alpha_s calculations using various schemes.
+    """
+    cdef c.AlphaS* _ptr
+    cdef object _parent
 
-     def __dealloc__(self):
-         del self._ptr
-         #pass
+    cdef set_ptr(self, c.AlphaS* ptr):
+        self._ptr = ptr
 
-     @property
-     def type(self):
-         "Get the method of alpha_s calculation as a string"
-         return self._ptr.type()
+    cdef set_parent(self, parent):
+        # Keep a reference to the parent PDF object to prevent python from removing it.
+        self._parent = parent
 
-     def alphasQ(self, double q):
-         "Get alpha_s value at scale q"
-         return self._ptr.alphasQ(q)
+    @property
+    def type(self):
+        "Get the method of alpha_s calculation as a string"
+        return self._ptr.type()
 
-     def alphasQ2(self, double q2):
-         "Get alpha_s value at scale q"
-         return self._ptr.alphasQ2(q2)
+    def alphasQ(self, double q):
+        "Get alpha_s value at scale q"
+        return self._ptr.alphasQ(q)
 
-     def numFlavorsQ(self, double q):
-         "Get number of active flavors at scale q"
-         return self._ptr.numFlavorsQ(q)
+    def alphasQ2(self, double q2):
+        "Get alpha_s value at scale q"
+        return self._ptr.alphasQ2(q2)
 
-     def numFlavorsQ2(self, double q2):
-         "Get number of active flavors at scale q"
-         return self._ptr.numFlavorsQ2(q2)
+    def numFlavorsQ(self, double q):
+        "Get number of active flavors at scale q"
+        return self._ptr.numFlavorsQ(q)
 
-     def quarkMass(self, int id):
-         "Get mass of quark with PID code id"
-         return self._ptr.quarkMass(id)
+    def numFlavorsQ2(self, double q2):
+        "Get number of active flavors at scale q"
+        return self._ptr.numFlavorsQ2(q2)
 
-     def setQuarkMass(self, int id, double value):
-         "Set mass of quark with PID code id"
-         self._ptr.setQuarkMass(id, value)
+    def quarkMass(self, int id):
+        "Get mass of quark with PID code id"
+        return self._ptr.quarkMass(id)
 
-     def quarkThreshold(self, int id):
-         "Get activation threshold of quark with PID code id"
-         return self._ptr.quarkThreshold(id)
+    def setQuarkMass(self, int id, double value):
+        "Set mass of quark with PID code id"
+        self._ptr.setQuarkMass(id, value)
 
-     def setQuarkThreshold(self, int id, double value):
-         "Set activation threshold of quark with PID code id"
-         self._ptr.setQuarkThreshold(id, value)
+    def quarkThreshold(self, int id):
+        "Get activation threshold of quark with PID code id"
+        return self._ptr.quarkThreshold(id)
 
-     def orderQCD(self):
-         "Get the QCD running order (max num loops) for this alphaS"
-         return self._ptr.orderQCD()
+    def setQuarkThreshold(self, int id, double value):
+        "Set activation threshold of quark with PID code id"
+        self._ptr.setQuarkThreshold(id, value)
 
-     def setOrderQCD(self, int order):
-         "Set the QCD running order (max num loops) for this alphaS"
-         self._ptr.setOrderQCD(order)
+    def orderQCD(self):
+        "Get the QCD running order (max num loops) for this alphaS"
+        return self._ptr.orderQCD()
 
-     def setMZ(self, double mz):
-         "Set the Z mass (used in ODE solver)"
-         self._ptr.setMZ(mz)
+    def setOrderQCD(self, int order):
+        "Set the QCD running order (max num loops) for this alphaS"
+        self._ptr.setOrderQCD(order)
 
-     def setAlphaSMZ(self, double alphas):
-         "Set alpha_s at the Z mass (used in ODE solver)"
-         self._ptr.setAlphaSMZ(alphas)
+    def setMZ(self, double mz):
+        "Set the Z mass (used in ODE solver)"
+        self._ptr.setMZ(mz)
 
-     def setLambda(self, int id, double val):
-         "Set the id'th LambdaQCD value (used in analytic solver)"
-         self._ptr.setLambda(id, val)
+    def setAlphaSMZ(self, double alphas):
+        "Set alpha_s at the Z mass (used in ODE solver)"
+        self._ptr.setAlphaSMZ(alphas)
 
-     def setFlavorScheme(self, scheme, int nf):
-         "Set the flavor scheme. nf is the fixed number (if FIXED)"
-         "or the max number (if VARIABLE)"
-         cdef FlavorScheme s
-         if scheme == "VARIABLE":
-           s = VARIABLE
-         elif scheme == "FIXED":
-           s = FIXED
-         else:
-           print "You can only set the flavor scheme to FIXED or VARIABLE"
-           return
-         self._ptr.setFlavorScheme(s,nf)
-     def flavorScheme(self):
-         cdef FlavorScheme s = self._ptr.flavorScheme()
-         if int(s) == 0:
-           print "FIXED"
-         if int(s) == 1:
-           print "VARIABLE"
+    def setLambda(self, int id, double val):
+        "Set the id'th LambdaQCD value (used in analytic solver)"
+        self._ptr.setLambda(id, val)
+
+    def setFlavorScheme(self, scheme, int nf):
+        """\
+        Set the flavor scheme. nf is the fixed number (if FIXED)
+        or the max number (if VARIABLE)"""
+        # cdef FlavorScheme s
+        # if scheme == "VARIABLE":
+        #   s = VARIABLE
+        # elif scheme == "FIXED":
+        #   s = FIXED
+        cdef cFlavorScheme s
+        if type(scheme) is FlavorScheme:
+            s = int(scheme.real)
+        elif type(scheme) is int:
+            return self.setFlavorScheme(FlavorScheme(scheme), nf)
+        elif scheme == "VARIABLE":
+            return self.setFlavorScheme(VARIABLE, nf)
+        elif scheme == "FIXED":
+            return self.setFlavorScheme(FIXED, nf)
+        else:
+            print("You can only set the flavor scheme to FIXED or VARIABLE")
+            return
+        self._ptr.setFlavorScheme(s, nf)
+
+    def flavorScheme(self, as_str=True):
+         s = FlavorScheme(int(self._ptr.flavorScheme()))
+         return s if not as_str else s.name
+         # cdef FlavorScheme s = self._ptr.flavorScheme()
+         # if int(s) == 0:
+         #   return "FIXED"
+         # if int(s) == 1:
+         #   print("VARIABLE")
 
 
 def getConfig():
@@ -641,22 +862,22 @@ def mkBareAlphaS(as_type):
 
 
 def weightxQ(int id, double x, double Q, PDF basepdf, PDF newpdf, aschk=5e-2):
-    """Reweight from basepdf to newpdf with flavour id and kinematics x and Q2."""
+    """Reweight from basepdf to newpdf with flavor id and kinematics x and Q2."""
     from cython.operator import dereference
     return c.weightxQ(id, x, Q, dereference(basepdf._ptr), dereference(newpdf._ptr), aschk)
 
 def weightxQ2(int id, double x, double Q2, PDF basepdf, PDF newpdf, aschk=5e-2):
-    """Reweight from basepdf to newpdf with flavour id and kinematics x and Q2."""
+    """Reweight from basepdf to newpdf with flavor id and kinematics x and Q2."""
     from cython.operator import dereference
     return c.weightxQ2(id, x, Q2, dereference(basepdf._ptr), dereference(newpdf._ptr), aschk)
 
 def weightxxQ(int id1, int id2, double x1, double x2, double Q, PDF basepdf, PDF newpdf, aschk=5e-2):
-    """Reweight from basepdf to newpdf with flavour id and kinematics x and Q2."""
+    """Reweight from basepdf to newpdf with flavor id and kinematics x and Q2."""
     from cython.operator import dereference
     return c.weightxxQ(id1, id2, x1, x2, Q, dereference(basepdf._ptr), dereference(newpdf._ptr), aschk)
 
 def weightxxQ2(int id1, int id2, double x1, double x2, double Q2, PDF basepdf, PDF newpdf, aschk=5e-2):
-    """Reweight from basepdf to newpdf with flavour id and kinematics x and Q2."""
+    """Reweight from basepdf to newpdf with flavor id and kinematics x and Q2."""
     from cython.operator import dereference
     return c.weightxxQ2(id1, id2, x1, x2, Q2, dereference(basepdf._ptr), dereference(newpdf._ptr), aschk)
 
@@ -698,3 +919,8 @@ def pathsPrepend(newpath):
 def pathsAppend(newpath):
     "Append to the list of current PDF data search paths."
     c.pathsAppend(text_encode(newpath))
+
+def findFile(filename):
+    "Return the path to the found filename via the LHAPDF search mechanism, or None."
+    cdef string path = c.findFile(filename)
+    return path if not path.empty() else None

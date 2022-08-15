@@ -1,13 +1,13 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/GridPDF.h"
 #include "LHAPDF/Interpolator.h"
 #include "LHAPDF/Factories.h"
+#include "LHAPDF/FileIO.h"
 #include <iostream>
-#include <fstream>
 #include <sstream>
 #include <string>
 #include <stdexcept>
@@ -21,6 +21,11 @@ namespace LHAPDF {
   void GridPDF::setInterpolator(Interpolator* ipol) {
     _interpolator.reset(ipol);
     _interpolator->bind(this);
+    if (_interpolator->getType() == "logcubic"){
+      _computePolynomialCoefficients(true);
+    } else if (_interpolator->getType() == "cubic"){
+      _computePolynomialCoefficients(false);
+    }
   }
 
   void GridPDF::setInterpolator(const std::string& ipolname) {
@@ -38,7 +43,13 @@ namespace LHAPDF {
     return *_interpolator;
   }
 
+  const vector<double>& GridPDF::xKnots() const {
+    return data.xs();
+  }
 
+  const vector<double>& GridPDF::q2Knots() const {
+    return data.q2s();
+  }
 
   void GridPDF::setExtrapolator(Extrapolator* xpol) {
     _extrapolator.reset(xpol);
@@ -60,54 +71,33 @@ namespace LHAPDF {
     return *_extrapolator;
   }
 
-
-  const KnotArrayNF& GridPDF::subgrid(double q2) const {
-    assert(q2 >= 0);
-    assert(!q2Knots().empty());
-    map<double, KnotArrayNF>::const_iterator it = _knotarrays.upper_bound(q2);
-    if (it == _knotarrays.begin())
-      throw GridError("Requested Q2 " + to_str(q2) + " is lower than any available Q2 subgrid (lowest Q2 = " + to_str(q2Knots().front()) + ")");
-    if (it == _knotarrays.end() && q2 > q2Knots().back())
-      throw GridError("Requested Q2 " + to_str(q2) + " is higher than any available Q2 subgrid (highest Q2 = " + to_str(q2Knots().back()) + ")");
-    --it; // upper_bound (and lower_bound) returns the entry *above* q2: we need to decrement by one element
-    // std::cout << "Using subgrid #" << std::distance(_knotarrays.begin(), it) << std::endl;
-    return it->second;
-  }
-
-
-  const vector<double>& GridPDF::q2Knots() const {
-    if (_q2knots.empty()) {
-      // Get the list of Q2 knots by combining all subgrids
-      for (const pair<double, KnotArrayNF>& q2_ka : _knotarrays) {
-        const KnotArrayNF& subgrid = q2_ka.second;
-        const KnotArray1F& grid1 = subgrid.get_first();
-        if (grid1.q2s().empty()) continue; //< @todo This shouldn't be possible, right? Throw instead, or ditch the check?
-        for (double q2 : grid1.q2s()) {
-          if (_q2knots.empty() || q2 != _q2knots.back()) _q2knots.push_back(q2);
-        }
-      }
-    }
-    return _q2knots;
-  }
-
-
   double GridPDF::_xfxQ2(int id, double x, double q2) const {
     /// Decide whether to use interpolation or extrapolation... the sanity checks
     /// are done in the public PDF::xfxQ2 function.
-    // cout << "From GridPDF[0]: x = " << x << ", Q2 = " << q2 << endl;
     double xfx = 0;
+    int _id = data.get_pid(id);
+    if (_id == -1) return 0;
     if (inRangeXQ2(x, q2)) {
-      // cout << "From GridPDF[ipol]: x = " << x << ", Q2 = " << q2 << endl;
-      // cout << "Num subgrids = " << _knotarrays.size() << endl;
-      // int i = 0;
-      // for (std::map<double, KnotArrayNF>::const_iterator it = _knotarrays.begin(); it != _knotarrays.end(); ++it)
-      //   cout << "#" << i++ << " from Q = " << sqrt(it->first) << endl;
-      xfx = interpolator().interpolateXQ2(id, x, q2);
+      xfx = interpolator().interpolateXQ2(_id, x, q2);
     } else {
-      // cout << "From GridPDF[xpol]: x = " << x << ", Q2 = " << q2 << endl;
-      xfx = extrapolator().extrapolateXQ2(id, x, q2);
+      xfx = extrapolator().extrapolateXQ2(_id, x, q2);
     }
     return xfx;
+  }
+
+  void GridPDF::_xfxQ2(double x, double q2, std::vector<double>& ret) const {
+    if (inRangeXQ2(x, q2)) {
+      interpolator().interpolateXQ2(x, q2, ret);
+    } else {
+      for (int id = 0; id < 13; ++id) {
+	int _id = data.get_pid(id - 6);
+	if (_id == -1) {
+	  ret[id] = 0;
+	} else {
+	  ret[id] = extrapolator().extrapolateXQ2(_id, x, q2);
+	}
+      }
+    }
   }
 
 
@@ -119,9 +109,13 @@ namespace LHAPDF {
     class NumParser {
     public:
       // Constructor from char*
-      NumParser(const char* line=0) { reset(line); }
+      NumParser(const char* line=0) {
+        reset(line);
+      }
       // Constructor from std::string
-      NumParser(const string& line) { reset(line); }
+      NumParser(const string& line) {
+        reset(line);
+      }
 
       // Re-init to new line as char*
       void reset(const char* line=0) {
@@ -143,29 +137,184 @@ namespace LHAPDF {
       // Allow use of operator>> in a while loop
       operator bool() const { return !_error; }
 
+
     private:
+
       void _get(double& x) { x = std::strtod(_next, &_new_next); }
       void _get(float& x) { x = std::strtof(_next, &_new_next); }
       void _get(int& i) { i = std::strtol(_next, &_new_next, 10); } // force base 10!
 
       char *_next, *_new_next;
       bool _error;
+
     };
 
+
+    double _ddx(KnotArray& data, size_t ix, size_t iq2, int id, bool logspace){
+      const size_t nxknots = data.xsize();
+      double del1, del2;
+      if (logspace){
+	del1 = (ix == 0)           ? 0 : data.logxs(ix)   - data.logxs(ix-1);
+	del2 = (ix == nxknots - 1) ? 0 : data.logxs(ix+1) - data.logxs(ix);
+      } else {
+	del1 = (ix == 0)           ? 0 : data.xs(ix)   - data.xs(ix-1);
+	del2 = (ix == nxknots - 1) ? 0 : data.xs(ix+1) - data.xs(ix);
+      }
+      if (ix != 0 && ix != nxknots-1) { //< If central, use the central difference
+	const double lddx = (data.xf(ix, iq2, id) - data.xf(ix-1, iq2, id)) / del1;
+	const double rddx = (data.xf(ix+1, iq2, id) - data.xf(ix, iq2, id)) / del2;
+	return (lddx + rddx) / 2.0;
+      } else if (ix == 0) { //< If at leftmost edge, use forward difference
+	return (data.xf(ix+1, iq2, id) - data.xf(ix, iq2, id)) / del2;
+      } else if (ix == nxknots-1) { //< If at rightmost edge, use backward difference
+	return (data.xf(ix, iq2, id) - data.xf(ix-1, iq2, id)) / del1;
+      } else {
+	throw LogicError("We shouldn't be able to get here!");
+      }
+    }
+
+
+  } // End unnamed namespace
+
+
+
+  void GridPDF::_computePolynomialCoefficients(bool logspace){
+    const size_t nxknots = data.xsize();
+    vector<size_t> shape{data.xsize()-1, data.q2size(), data.size(), 4};
+    vector<double> coeffs;
+    coeffs.resize(shape[0]*shape[1]*shape[2]*shape[3]);
+    for (size_t ix(0); ix<nxknots-1; ++ix){
+      for (size_t iq2(0); iq2<data.q2size(); ++iq2){
+	for (size_t id(0); id<data.size(); ++id){
+	  double dlogx;
+	  if (logspace){
+	    dlogx = data.logxs(ix+1) - data.logxs(ix);
+	  } else{
+	    dlogx = data.xs(ix+1) - data.xs(ix);
+	  }
+	  double VL  = data.xf (ix,   iq2, id);
+	  double VH  = data.xf (ix+1, iq2, id);
+	  double VDL = _ddx(data, ix,   iq2, id, logspace) * dlogx;
+	  double VDH = _ddx(data, ix+1, iq2, id, logspace) * dlogx;
+
+	  // polynomial coefficients
+	  double a = VDH + VDL - 2*VH + 2*VL;
+	  double b = 3*VH - 3*VL - 2*VDL - VDH;
+	  double c = VDL;
+	  double d = VL;
+
+	  coeffs[ix*shape[1]*shape[2]*shape[3] + iq2*shape[2]*shape[3] + id*shape[3] + 0] = a;
+	  coeffs[ix*shape[1]*shape[2]*shape[3] + iq2*shape[2]*shape[3] + id*shape[3] + 1] = b;
+	  coeffs[ix*shape[1]*shape[2]*shape[3] + iq2*shape[2]*shape[3] + id*shape[3] + 2] = c;
+	  coeffs[ix*shape[1]*shape[2]*shape[3] + iq2*shape[2]*shape[3] + id*shape[3] + 3] = d;
+	}
+      }
+    }
+    data.setCoeffs() = coeffs;
   }
 
-
-  void GridPDF::_loadData(const std::string& mempath) {
+  void GridPDF::_loadData(const string& mempath) {
     string line, prevline;
     int iblock(0), iblockline(0), iline(0);
-    vector<double> xs, q2s;
-    vector<int> pids;
-    vector< vector<double> > ipid_xfs;
+    vector<double> xknots;
+    vector<double> q2knots;
 
-    try {
-      ifstream file(mempath.c_str());
+    vector<int> pids;
+    vector<double> ipid_xfs;
+
+    try{
+      IFile file(mempath.c_str());
       NumParser nparser; double ftoken; int itoken;
-      while (getline(file, line)) {
+      while (getline(*file, line)) {
+        line = trim(line);
+
+        // If the line is commented out, increment the line number but not the block line
+        iline += 1;
+        if (line.find("#") == 0) continue;
+        iblockline += 1;
+
+        if (line != "---") { // if we are not on a block separator line...
+          // Block 0 is the metadata, which we ignore here
+          if (iblock == 0) continue;
+
+          // Parse the data lines
+          nparser.reset(line);
+          if (iblockline == 1) { // x knots line
+	    if (iblock == 1){
+	      while (nparser >> ftoken) xknots.push_back(ftoken);
+	      if (xknots.empty())
+		throw ReadError("Empty x knot array on line " + to_str(iline));
+	    } else { // the x grid should be the same as for the fist i block
+	      int tmp = 0;
+	      while (nparser >> ftoken) {
+		if (ftoken != xknots[tmp])
+		  throw ReadError("Mismatch in the x-knots");
+		++tmp;
+	      }
+	    }
+
+          } else if (iblockline == 2) { // Q knots line
+            while (nparser >> ftoken) q2knots.push_back(ftoken*ftoken); // note Q -> Q2
+            if (q2knots.size() == 0)
+              throw ReadError("Empty Q knot array on line " + to_str(iline));
+          } else if (iblockline == 3) { // internal flavor IDs ordering line
+	    if (iblock == 1){
+	      while (nparser >> itoken) pids.push_back(itoken);
+	    } else {
+	      int tmp = 0;
+	      while (nparser >> itoken) {
+		if (itoken != pids[tmp])
+		  throw ReadError("Mismatch in the pids");
+		++tmp;
+	      }
+	    }
+            // Check that each line has many tokens as there should be flavours
+            if (pids.size() != flavors().size())
+              throw ReadError("PDF grid data error on line " + to_str(iline) + ": " + to_str(pids.size()) +
+                              " parton flavors declared but " + to_str(flavors().size()) + " expected from Flavors metadata");
+            /// @todo Handle sea/valence representations via internal pseudo-PIDs
+          }
+	} else{
+	  ++iblock;
+	  iblockline = 0;
+	}
+      }
+    } catch (Exception& e) {
+      throw;
+    } catch (std::exception& e) {
+      throw ReadError("Read error while parsing " + mempath + " as a GridPDF data file");
+    }
+
+    iblock = 0; iblockline = 0; iline = 0;
+
+    // fill the knots of Knotarray
+    data.setxknots()  = xknots;
+    data.setq2knots() = q2knots;
+    data.fillLogKnots();
+
+    // fill shape of Knotarray
+    vector<size_t> shape(3);
+    shape[0] = xknots.size();
+    shape[1] = q2knots.size();
+    shape[2] = pids.size();
+    data.setShape() = shape;
+    data.setPids() = pids;
+
+    // create lookuptable to get index id from pid
+    data.initPidLookup();
+
+    // sets size of data vector
+    ipid_xfs.resize(data.shape(0) * data.shape(1) * data.shape(2));
+
+    int qloc(0), qtot(0);
+    try {
+      int index(0);
+      int xindex(0);
+
+      IFile file(mempath.c_str());
+      NumParser nparser; double ftoken;
+      while (getline(*file, line)) {
+
         // Trim the current line to ensure that there is no effect of leading spaces, etc.
         line = trim(line);
         prevline = line; // used to test the last line after the while loop fails
@@ -176,56 +325,41 @@ namespace LHAPDF {
         iblockline += 1;
 
         if (line != "---") { // if we are not on a block separator line...
-
           // Block 0 is the metadata, which we ignore here
           if (iblock == 0) continue;
-
-          // Debug printout
-          // cout << iline << " = block line #" << iblockline << " => " << line << endl;
-
-          // Parse the data lines
           nparser.reset(line);
-          if (iblockline == 1) { // x knots line
-            while (nparser >> ftoken) xs.push_back(ftoken);
-            if (xs.empty())
-              throw ReadError("Empty x knot array on line " + to_str(iline));
-          } else if (iblockline == 2) { // Q knots line
-            while (nparser >> ftoken) q2s.push_back(ftoken*ftoken); // note Q -> Q2
-            if (q2s.empty())
-              throw ReadError("Empty Q knot array on line " + to_str(iline));
-          } else if (iblockline == 3) { // internal flavor IDs ordering line
-            while (nparser >> itoken) pids.push_back(itoken);
-            // Check that each line has many tokens as there should be flavours
-            if (pids.size() != flavors().size())
-              throw ReadError("PDF grid data error on line " + to_str(iline) + ": " + to_str(pids.size()) +
-                              " parton flavors declared but " + to_str(flavors().size()) + " expected from Flavors metadata");
-            /// @todo Handle sea/valence representations via internal pseudo-PIDs
+	  if (iblockline == 2) { // Find out how many q values are there
+	    qloc = 0;
+            while (nparser >> ftoken) ++qloc;
+	  } else if (iblockline < 4){
+	    continue;
           } else {
-            if (iblockline == 4) { // on the first line of the xf block, resize the arrays
-              ipid_xfs.resize(pids.size());
-              const size_t subgridsize = xs.size()*q2s.size();
-              for (size_t ipid = 0; ipid < pids.size(); ++ipid) {
-                ipid_xfs[ipid].reserve(subgridsize);
-              }
-            }
-            size_t ipid = 0;
             while (nparser >> ftoken) {
-              ipid_xfs[ipid].push_back(ftoken);
-              ipid += 1;
+	      ipid_xfs[xindex*data.shape(2)*data.shape(1)
+		       + qtot*data.shape(2)
+		       + index] = ftoken;
+	      ++index;
             }
+	    if ( (iblockline != 3) && (iblockline - 3) % qloc == 0){
+	      ++xindex;
+	      index = 0;
+	    }
             // Check that each line has many tokens as there should be flavours
-            if (ipid != pids.size())
-              throw ReadError("PDF grid data error on line " + to_str(iline) + ": " + to_str(ipid) +
+            if (index % pids.size() != 0)
+	      /// @todo Error message gives wrong output bc. index % pids.size() is not the number of pids
+              throw ReadError("PDF grid data error on line " + to_str(iline) + ": " + to_str(index % pids.size()) +
                               " flavor entries seen but " + to_str(pids.size()) + " expected");
           }
 
         } else { // we *are* on a block separator line
-
           // Check that the expected number of data lines were seen in the last block
+	  // Does not work anymore, how to translate?
+	  /*
           if (iblock > 0 && iblockline - 1 != int(xs.size()*q2s.size()) + 3)
             throw ReadError("PDF grid data error on line " + to_str(iline) + ": " +
                             to_str(iblockline-1) + " data lines were seen in block " + to_str(iblock-1) +
                             " but " + to_str(xs.size()*q2s.size() + 3) + " expected");
+	  */
 
           // Ignore block registration if we've just finished reading the 0th (metadata) block
           if (iblock > 0) {
@@ -233,38 +367,28 @@ namespace LHAPDF {
             // Throw if the last subgrid block was of zero size
             if (ipid_xfs.empty())
               throw ReadError("Empty xf values array in data block " + to_str(iblock) + ", ending on line " + to_str(iline));
-
-            // Register data from the block into the GridPDF data structure
-            KnotArrayNF& arraynf = _knotarrays[q2s.front()]; //< Reference to newly created subgrid object
-            for (size_t ipid = 0; ipid < pids.size(); ++ipid) {
-              const int pid = pids[ipid];
-              // Create the 2D array with the x and Q2 knot positions
-              arraynf[pid] = KnotArray1F(xs, q2s);
-              // Populate the xf data array
-              arraynf[pid].setxfs(ipid_xfs[ipid]);
-            }
           }
 
-          // Increment/reset the block and line counters, subgrid arrays, etc.
+          // Increment/reset the block and line counters, etc
           iblock += 1;
           iblockline = 0;
-          xs.clear(); q2s.clear();
-          for (size_t ipid = 0; ipid < pids.size(); ++ipid)
-            ipid_xfs[ipid].clear();
-          pids.clear();
+	  index = 0;
+	  xindex = 0;
+	  qtot += qloc;
         }
+
       }
+      data.setGrid() = ipid_xfs;
+
       // File reading finished: complain if it was not properly terminated
       if (prevline != "---")
         throw ReadError("Grid file " + mempath + " is not properly terminated: .dat files MUST end with a --- separator line");
-
       // Error handling
     } catch (Exception& e) {
       throw;
     } catch (std::exception& e) {
       throw ReadError("Read error while parsing " + mempath + " as a GridPDF data file");
     }
-
   }
 
 

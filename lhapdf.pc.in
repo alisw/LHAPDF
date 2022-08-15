@@ -10,4 +10,3 @@ URL: https://lhapdf.hepforge.org
 Version: @VERSION@
 Libs: -L@libdir@ -lLHAPDF
 Cflags: -I@includedir@
-#-I@BOOST_CPPFLAGS@

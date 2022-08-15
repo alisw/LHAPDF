@@ -36,10 +36,10 @@ int main(int argc, char* argv[]) {
   cout << endl;
   cout << "Flavors (vec<int>) = " << LHAPDF::to_str(pids) << endl;
 
-  cout << "x0, Q0 = " << pdf.subgrid(21, 100).xf(0, 0) << endl;
-  cout << "x1, Q0 = " << pdf.subgrid(21, 100).xf(1, 0) << endl;
-  cout << "x0, Q1 = " << pdf.subgrid(21, 100).xf(0, 1) << endl;
-  cout << "x1, Q1 = " << pdf.subgrid(21, 100).xf(1, 1) << endl;
+  cout << "x0, Q0 = " << pdf.knotarray().xf(21, 0, 0) << endl;
+  cout << "x1, Q0 = " << pdf.knotarray().xf(21, 1, 0) << endl;
+  cout << "x0, Q1 = " << pdf.knotarray().xf(21, 0, 1) << endl;
+  cout << "x1, Q1 = " << pdf.knotarray().xf(21, 1, 1) << endl;
 
   cout << pdf.xfxQ(21, 0.7, 10.0) << endl;
   cout << pdf.xfxQ(21, 0.2, 126) << endl;

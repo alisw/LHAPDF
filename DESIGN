@@ -1,0 +1,463 @@
+/**
+@page design Design
+
+LHAPDF6 design
+==============
+
+Introduction
+------------
+
+There are several reasons for this rewrite and the migration to C++, the
+main ones being:
+
+- Hugely reduced memory overhead
+  - Although modern Fortran compilers can now dynamically allocate memory,
+    LHAPDF was written with F77 and static memory allocation in mind. The
+    memory overhead of LHAPDF5 is therefore proportional to the number of
+    supported PDF sets, then multiplied again by the number of simultaneous
+    PDF sets that can be used. The uninitialized static memory footprint is
+    hence huge: at more than 2 GB it is incompatible with running LHAPDF on
+    the Grid in "full memory" mode. This excludes use of standard LHAPDF
+    builds for PDF reweighting and other tasks on the standard LHC computing
+    resources. Dynamic memory allocation in LHAPDF6 entirely solves this problem,
+    while removing all restrictions on the number of simultaneous PDF sets.
+
+- Speed
+  - Early tests show that LHAPDF6 can be substantially faster than LHAPDF5 in
+    event generation, largely due to the ability to now evolve each PDF flavour
+    independently.
+
+- Encapsulation
+  - The multi-set features of LHAPDF5 were added in retrospect, after the
+    writing of PDF set wrapper codes which assumed only one PDF set would be
+    used at one time. As a result, the parallel use of multiple sets returns
+    correct PDF values, but does not work correctly for "metadata" such as
+    alpha_s, number of flavours, etc. The new version stores such information
+    in Info and AlphaS objects which are strictly bound to the PDF being
+    accessed, so these problems of global state are no longer an issue.
+
+- Generality
+  - Previous versions of LHAPDF evolved slowly over time.  The original code
+    was not written with certain added features in mind.  Taking the above
+    case of multiple PDF loading as an example; the current Fortan version of
+    LHAPDF has specific functionality to deal with this case.  The C++
+    version that we propose deals with multiple PDF loading as standard,
+    using the same functionality as for the single PDF case.  Other examples
+    of this include dealing with special parton cases such as photons.
+    Although this has little to do with language limitation; a rewrite with
+    these general cases in mind, in any language, will allow for clearer
+    code.  Along with this, current Fortran code has been modified
+    extensively to deal with different PDF file formats, each with their own
+    parameter space and interpolation rules.  One of the largest improvements
+    implement in this C++ version is a unified PDF file format, with general
+    parton flavour content (using the PDG MC particle ID scheme).
+    This removes the need for special wrapper codes for each PDF, avoids the
+    need for special functions to access e.g. photon PDFs, and means that
+    new PDF sets can be made available without requiring a new LHAPDF release.
+
+- Extensibility
+  - Extensions to the current Fortan code are difficult considering how much it
+    has evolved since its conception.  By exploiting object orientated
+    practises, the C++ version will allow for the easy extension of several
+    features.  An example of this is the Interpolator interface.  By
+    implementing this; users can add to the current list of general
+    interpolation methods that can be called on any PDF set, rather than dealing
+    with specific interpolation rules being included in the individual authors'
+    wrapper files.  The modular nature of the program means that any
+    unforeseeable requirements in the future can, hopefully, be implemented
+    easily.
+
+
+
+Terminology
+-----------
+
+The core element of the API is the PDF interface, representing a single set member
+for several flavours.
+
+Note that the historical/community terminology for levels of "PDF" is rather
+vague, leading to frequent confusion. The term "PDF" may, depending on the
+speaker, mean any of the following:
+- a single parton density function for one parton flavour;
+- a PDF set member, consisting of a correlated group of parton densities, one for each parton flavour;
+- a set of PDF members, usually reflecting uncertainties encountered in PDF construction.
+
+The second of these, the "member", is the most commonly used PDF object as it
+is usual to choose a point in (x,Q2) space and then use the parton density values
+for each parton flavour to determine the outcome of a Markovian process step.
+
+However, the name "member" is not in active usage for this concept. Hence in
+this version of LHAPDF we use the term "PDF" to mean a member, and "PDF set" to
+mean a collection of these. No explicit term is defined for a single-flavour PDF
+but we tentatively reserve the terms 1FPDF and PDF1F (the latter for C/C++ validity)
+for this purpose.
+
+
+The main PDF object hierarchy
+-----------------------------
+
+PDF objects are allocated dynamically (either locally or on the heap). None of the
+static memory issues from Fortran LHAPDF. Potential for use of singleton
+allocation based on unique data paths.
+
+PDF data to be separated from the framework: new PDFs should not require
+addition of new handling code, nor even a new release of LHAPDF.
+
+Data versioning is hence needed, because a library version does not imply a
+particular bug-fix version of a PDF set's data files. In fact this is already an
+unaddressed issue for LHAPDF5. We cannot automaticaly enforce good data
+provenance, but metadata flags are available for use in PDF sets which declare
+both the integer version of the set data and the integer-encoded version of the
+LHAPDF library required to use it. Set authors are encouraged to use both.
+
+Flavours are identified by standard PDG ID codes. A PDF can contain arbitrarily
+many flavours. A special case is ID = 0, which for backward compatibility and
+convenience is treated as equivalent to ID = 21 (this allows a for-loop from -6
+to +6 to cover all quarks and the gluon without need of special treatment to
+replace the 0 index with 21).
+
+PDFSet objects are singletons used only for set-level metadata querying and for
+convenience loading of all PDFs in a set. They inherit from the general `Info`
+class used for metadata handling.
+
+A "return zero" treatment for unsupported flavours, based on
+global, set-level, or member-level configuration, is used by default. It is
+also possible to request that an exception be thrown on attempting to access
+an undefined member (note that this will include top quarks in almost all PDFs,
+as they are not explicitly tabulated... hence the default behaviour of assuming
+that an unlisted flavour has zero PDF density.).
+
+The main PDF type is the "grid" PDF, based on interpolation of rectangular grids
+of data points.
+
+*Subgrids* are an important feature: these are distinct PDF interpolation grids
+binned in Q2, so that gradient discontinuities (and value discontinuities, for
+NNLO PDFs) across flavour thresholds can be handled correctly. This is at least
+needed by the MSTW PDFs.
+
+@note Subgrids in x have also been suggested, but just ensuring sufficient x
+  knot density seems preferable: unlike flavour thresholds, continuity is
+  important, and this is complex to implement, and anyway the benefit is more
+  for evolution than for interpolation.
+
+A `PDFSet` object is provided for handling of set-level metadata and to provide a
+convenient interface for loading all members in a set.
+
+
+Interpolators
+-------------
+
+The default log-bicubic is standard, in general using Q2 subgrids (if present) to
+handle discontinuous transitions in Q2 across flavour mass thresholds. Log
+interpolation? Named interpolators overrideable in code, but with defaults
+specified in the set/member metadata.
+
+Caching: interpolators should be bound to a PDF object (and be unique, i.e. no
+singletons) so that they can cache looked-up/interpolated values. The main
+use-case for this is flavour caching, where all flavours in a PDF will be needed
+at a single (x,Q2) point. Since each flavour grid needs to be separately
+interpolated, ALWAYS calculating all flavours would be wasteful, so the indices
+of the surrounding grid points (including implicit identification of grid edges)
+may be cached so that the lookup need not be done for each flavour as they are
+all defined on the same (sub)grid: this can be done in the interpolator base
+class or calling code. The interpolation weights can also be cached, but this is
+specific to the interpolator algorithm.
+
+
+Extrapolators
+-------------
+
+Extrapolators: extrapolation may be required but is not advised. Essentially a
+damage minimisation exercise. Specification via metadata or explicit code
+as for interpolators.
+
+The default behaviour is to "lock" or "freeze" the PDF value at the edge of the
+fitted grid, rather than to truly extrapolate. An alternative extrapolation
+handler is provided which throws an exception if extrapolation is
+required. Further extrapolators can be user-defined, but no extra "standard"
+extrapolators are currently planned.
+
+Extrapolators, like interpolators, are bound to a GridPDF object. This also
+makes it possible for an Extrapolator to use the currently bound Interpolator
+object in its calculation of the extrapolation: this is used by the default
+nearest-point extrapolator. In principle extrapolation could also allow
+PDF-specific lookup caching, but this is unlikely to be necessary (and to an
+extent will occur automatically via caching on the interpolator).
+
+
+Data format
+-----------
+
+Each PDF set is defined by a directory (conceivably support could
+later be added for zip or tar archives whose *contents* have a directory
+structure) containing data files. Each PDF member is stored in a text file with
+the name of the set followed by an underscore and a four digit number (including
+leading zeros if needed) and the extension .dat, e.g. <setname>/<setname>_0031.dat
+
+The head of the file is reserved for member-level metadata in the YAML format:
+this section ends with a sequence of three dashes (`---`) on a line of their own. This
+YAML metadata section is mandatory for all PDF formats, but the format following
+the `---` divider line may vary. The type of PDF (and hence the data block format)
+must be declared via the YAML "Format" flag in the PDF member file or set info file.
+(The latter has the path form <setname>/<setname>.info and contains a single YAML
+document.)
+
+Plain text rather than binary files are mandated for ease of creation, human
+readability/debuggability, and because standard compression tools are available
+for later addition to the LHAPDF system if runtime data file size is a serious
+issue. Separate files are used for data reading efficiency if only a few members
+of a large set are needed, and all files have names including the set name so that
+they retain a clear identity when removed from their containing directory, e.g. if
+exchanged as email attachments.
+
+For grid PDFs, the following file content is in a grid format uniform to all PDF
+families: subgrids are delimited by more `---` line separators, and within each
+subgrid the first two lines are lists of the x and Q knot values respectively
+used in that grid.
+
+@note While Q2 is the representation of the renormalization scale used inside
+the LHAPDF library (since generator and other codes will typically query the PDF
+via the squared scale and it would be inefficient to have to call `sqrt(q2)`
+every time), in the data files the unsquared Q form is used both for PDF and
+alpha_s interpolation knot positions. This is to improve the readability of the
+files, since unsquared values are more easily identified with the quark and Z masses.
+
+The following lines are the xf values of the PDFs for each
+supported flavour, each line representing one (x,Q) grid anchor point. The
+order of the xf lines is that of a nested pair of loops, the outer over x knots
+and the inner over Q knots -- hence each subgrid data block is a series of line
+groups, each with a single x value but different Q values in its constituent
+lines.  The flavours for which the xf values are listed in each line are
+specified as set (or member) metadata, and the xf values are listed in
+increasing order of PDG ID code (e.g. usually -5..5, 21 or -6..6, 21 for the
+standard 5 or 6 quark-flavour PDF). The final line must be another `---`
+delimiter to unambiguously declare the end of the final subgrid block.
+
+Scientific formatting of floating point numbers should be used throughout the
+data block, and as required in the metadata block. The exponent character should
+be E (or e) rather than D, and the set preparer is responsible for ensuring that
+the values are entered with sufficient precision for the required numerical
+performance.
+
+Lines which begin with a # symbol will be treated as comments and excluded from
+the format parsing. Partial line comments are not allowed: the # symbol must be
+the absolute first character on the line otherwise it will be treated as part of
+a data line.
+
+New PDF formats may be proposed to the LHAPDF maintainers, and will be
+considered for standardisation. Acceptance of proposals is not guaranteed, and
+modifications may be insisted upon. We do appreciate the effort, but need to
+ensure that new standard formats are kept to a maintainably small number, and
+that such formats are sufficiently clean and general that they can conceivably
+be maintained forever.
+
+
+Metadata: the Info system
+-------------------------
+
+Info objects for metadata and configuration handling: cascading from global
+settings down to member-level settings for flexibility. Able to be read in YAML
+format from any file, stopping parsing at the --- marker: this allows metadata
+to be read for many (including all) sets simultaneously without incurring the
+memory penalty of having loaded many data grids. Allows automatic documentation
+for web, PDF (via LaTeX), etc.
+
+@todo Documentation system for PDFs -- output for pick-up by Doxygen?
+
+The global configuration is specified via the $prefix/lhapdf.conf file. Settings
+can be overridden in the code via a singleton Config object.
+
+PDF set-level info can be supplied as an override for the defaults via the
+PDFSet objects. These inherit from the Info base class, as does Config and the
+member-level PDFInfo type. PDFSet objects are also singletons -- at most one can
+exist for a given set name. This means that after all members of a set have been
+loaded as PDF objects, their behaviours specified at set-level can all be
+changed via the shared PDFSet object. If the members' PDFInfo objects specify a
+metadata flag, that value is the one that will be used, of course, even if a
+set-level version of the same flag is explicitly reset.
+
+The `.info` file allows for PDF sets to be versioned (to permit trackable
+updates of a grid to fix bugs or improve the interpolation knot positions) using
+the integer `DataVersion` metadata flag. A negative value of this flag indicates
+that this PDF set is not suitable for production use, and the library will print
+a warning message to the terminal in this case.
+
+
+QCD alpha_s evolution
+---------------------
+
+alpha_s may be calculated by several methods: analytic approximations, numerical
+solution of the evolution ODE (both with use of flavour threshold treatments),
+or by interpolation of tabulated datapoints in the set/member metadata.
+
+The interpolation approach uses Q and alpha_s knot values stored as "pure
+metadata" in the header for uniformity of treatment between different
+(hypothetical) PDF grid formats. Interpolation subgrids across flavour
+thresholds are supported, in this case with the subgrid boundaries declared by
+repeated consecutive values in the Q knots array. Cubic interpolation in log(Q2)
+is used, with fixed value extrapolation at high-Q. The ODE calculator solves the
+ODE only once, then saves the result as an interpolation grid for (much)
+improved efficiency.
+
+QCD params related to alpha_s are specified in the metadata: AlphaS_Lambda4,
+AlphaS_Lambda5, etc.  AlphaS_MZ, NumFlavors, FlavorScheme, quark masses, QCD
+order (as an int = number of loops), and the alpha_s solver name. See the
+CONFIGFLAGS document for the full list.
+
+@note The AlphaS objects are all designed to have no dependence on other LHAPDF
+  objects: they can be happily used in non-PDF contexts. The default parameters
+  are overridden by the PDF objects when creating
+
+
+Laziness
+--------
+
+Interpolators, extrapolators, and AlphaS objects are only loaded when they (or a
+value calculated by them) are requested: this means that PDF objects loaded only
+for metadata reasons do not waste time or memory on creating calculators which
+will not be used. It also means that user-supplied versions of these objects may
+be passed without having to first create and delete a default as specified by the
+PDF's metadata fields.
+
+Other laziness may be added in time, e.g. lazy loading of PDF data blocks.
+
+
+Factories
+---------
+
+PDF members, interpolators, extrapolators, and alpha_s solvers are all
+obtainable by name from factories: this allows all configuration of defaults via
+data/info files rather than needing set-specific code. The factories are based
+on hard-coded names: we do not anticipate a need for truly dynamic "plug-in"
+specification of these objects, and such a facility adds significant complication
+to the framework. For development of new interpolators, or use of personalised
+ones, all helper object binding designed to be handled by factories may also be
+explicitly overridden in user code via the polymorphic Interpolator, Extrapolator,
+and AlphaS interfaces.
+
+Factory instantiation of PDFs will be the normal approach, since return of a
+reference to the PDF base type obviates the need to know whether a set is based
+on grid interpolation or something else. This can be determined via set/member
+metadata obtained without loading the format-specific data.
+
+
+Memory management and ownership semantics
+-----------------------------------------
+
+PDF objects own the interpolators, extrapolators, alpha_s calculators and info
+objects associated to them. When the PDF object goes out of scope, these will
+be deleted. The user should not attempt to delete these objects once they have
+been associated to a PDF, and user implementations of these objects should not
+attempt to delete the associated PDF.
+
+The freeing of memory associated with objects created in or passed to PDF objects
+is automatic via `std::auto_ptr` smart pointers. The LHAGLUE interface uses similar
+smart pointers to avoid memory leaks.
+
+
+Backward compatibility
+----------------------
+
+LHAPDF5 and "LHAGLUE" (i.e. PDFLIB interface) Fortran API elements are provided
+for Fortran generators which won't/can't change their calling code. LHAPDF5 ID
+codes will be supported and will continue to be assigned: PDF loading by these
+IDs will be possible and used as the back-end for the Fortran functions.
+
+The LHAPDF5 C++ and Python APIs are *not* supported in LHAPDF6, as codes which
+use these will generally be able to update. In C++, parallel support for LHAPDF5
+and LHAPDF6 (and potentially future versions) in calling code may be achieved by
+use of the LHAPDF_MAJOR_VERSION preprocessor macro, which is defined with the
+integer value 6 in LHAPDF6, and not at all in LHAPDF5. Python compatibility can
+be achieved more dynamically, e.g. by use of the hasattr() built-in function to
+test the capabilities of objects and modules.
+
+
+Migration and regression testing
+--------------------------------
+
+Continuous validation against Fortran LHAPDF5 will be made using automated
+scripts. A nominal per-mille (0.1%) maximum deviation will be tolerated to
+consider a PDF as "validated".
+
+The deviation function may include a tolerance treatment so that larger
+fractional deviations can be tolerated in regions where the PDF's xf value is
+anyway so small that it is of no physical importance: an absolute tolerance
+value of O(10^-5) is suggested for these regions. [The current deviation
+function is defined as d = ((xf6 + epsilon) / (xf5 + epsilon)) - 1 with abs
+tolerance epsilon, so that d -> 0 as xf << epsilon.]
+
+
+The LHAPDF ID code and index system
+-----------------------------------
+
+Index file pdfsets.index. Just two columns: a positive integer "LHAPDF ID" and
+the name of the PDF set whose first member starts at that ID. Used for lookup of
+PDF set names by LHAPDF ID, to avoid need for code modification to use this
+system. In general any ID will be associated with the set whose listed first ID
+is effectively the integer <= bin edge containing the arbitrary ID, to avoid
+having to list *all* PDF members' ID codes. The LHAPDF ID is the natural
+successor of the PDFLIB numbering scheme and will remain backward compatible
+with it, i.e. CTEQ6L1 will remain with ID 10042, CT10 with ID 10800, etc.
+
+
+Some design details
+-------------------
+
+Use of Q2 rather than Q internally and in the API: fits with generator
+implementation where evolution variables are usually squared, hence avoiding a
+call to sqrt, and because squaring is a cheaper operation than sqrt.
+
+The methods accepting a Q or Q2 argument explicitly declare which is being used
+in their names, e.g. xfxQ and xfxQ2, as this could not be otherwise inferred
+from the identical method signatures.
+
+Search paths: search for set directories, and info and data files in them, based
+on a fallback path treatment. The default path list should just be the
+<install_prefix>/share/LHAPDF directory. If defined, the colon-separated
+LHAPDF_SET_PATH variable will be searched first
+
+@todo Should the env var overwrite the install prefix or prepend?
+
+Prepending/appending or explicit setting of the paths should be possible via the API.
+
+@todo Use the global config system for the path handling?
+
+Flavor: the word is spelt the American way in the code for definiteness and
+consistency!  It's just a convention, don't take it personally ;-)
+
+Fix of the historic CTEQ6L1 "CTEQ6ll" naming typo, with backward compatibility
+in LHAGLUE. A replica of the Fortran PDFLIB and LHAPDFv5 function/subroutine
+interfaces is provided under the name LHAGLUE. This should behave familiarly for
+users of the old code, although the newly native C++ interface is much more
+pleasant and powerful. Multi-set methods are provided in the LHAGLUE interface,
+with the previous restriction on the number of simultaneously loaded sets
+removed. The dynamic memory allocation and deallocation is automatic.
+
+
+Future prospects
+----------------
+
+New interpolators (e.g. interpolation in log space or separate
+x,Q2 interpolator functions), addition of DGLAP or other numerically evolved PDF
+types based on e.g. HOPPET (these are not included by default as there has been
+a strong trend of PDFs toward purely interpolated grids during the lifetime of
+LHAPDF5.)
+
+"Indirect representations" of PDFs are anticipated but not directly supported in
+LHAPDF 6.0: these are grid PDFs in which the grid interpolation is not directly
+performed on the functions corresponding to physical partons, but on "utility"
+functions such as separated valence and sea components, which are combined to
+give the physical results. This may be implemented by making use of the
+"generator specific" range of PDG ID codes to represent the intermediate
+"flavors" -- several issues are involved in such an extension, so please contact
+the authors if you wish to implement such a PDF type so that we can ensure that
+the design meets general scalability and maintainability requirements.
+
+Nuclear PDFs are not supported in LHAPDFv6.0. We hope that the new C++ interface
+will make the writing of nuclear PDF wrapper classes easy, but do not personally
+have the experience to do so optimally. Nuclear physicists interested in addition
+of nuclear PDF capabilities are encouraged to get in touch with the LHAPDF
+developers to discuss requirements, and concrete proposals are particularly encouraged.
+
+
+*/

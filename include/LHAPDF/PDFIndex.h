@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_PDFIndex_H
@@ -12,8 +12,8 @@
 namespace LHAPDF {
 
 
-  /// @name Functions for PDF lookup by LHAPDF ID index file
-  //@{
+  /// @defgroup index PDF lookup in the LHAPDF ID index
+  ///@{
 
   /// Get the singleton LHAPDF set ID -> PDF index map
   std::map<int, std::string>& getPDFIndex();
@@ -26,8 +26,8 @@ namespace LHAPDF {
 
   /// @brief Decode a single PDF member ID string into a setname,memid pair
   ///
-  /// @note A trivial <SET,MEM> decoding rather than a "rea; lookup", for convenience & uniformity.
-  std::pair<std::string,int> lookupPDF(const std::string& pdfstr);
+  /// @note A trivial <SET,MEM> decoding rather than a "real lookup", for convenience & uniformity.
+  std::pair<std::string, int> lookupPDF(const std::string& pdfstr);
 
   /// Look up the member's LHAPDF index from the set name and member ID.
   ///
@@ -41,7 +41,7 @@ namespace LHAPDF {
     return lookupLHAPDFID(idpair.first, idpair.second);
   }
 
-  //@}
+  ///@}
 
 
 }

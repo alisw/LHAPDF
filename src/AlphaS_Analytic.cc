@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/AlphaS.h"
 #include "LHAPDF/Utils.h"
@@ -104,7 +104,7 @@ namespace LHAPDF {
     // A bit messy because the actual expressions are
     // quite messy...
     /// @todo Is it okay to use _alphas_mz as the constant value?
-    if(_qcdorder == 0) return _alphas_mz;
+    if (_qcdorder == 0) return _alphas_mz;
     const double A = 1 / beta[0];
     const double a_0 = 1;
     double tmp = a_0;

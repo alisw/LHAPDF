@@ -4,16 +4,17 @@
 @tableofcontents
 
 
-@section downloads Source file downloads
+@section install_downloads Source file downloads
 
-The source files can be downloaded from https://www.hepforge.org/downloads/lhapdf
+The source files can be downloaded from https://lhapdf.hepforge.org/downloads/
 
 
-@section quickstart Quick start instructions
+@section install_quickstart Quick start instructions
 
 If you have a C++11 compiler, building LHAPDF >= 6.2 should be straightforward:
 
-    wget http://www.hepforge.org/archive/lhapdf/LHAPDF-6.X.Y.tar.gz
+    wget https://lhapdf.hepforge.org/downloads/?f=LHAPDF-6.X.Y.tar.gz -O LHAPDF-6.X.Y.tar.gz
+    # ^ or use a web browser to download, which will get the filename correct
     tar xf LHAPDF-6.X.Y.tar.gz
     cd LHAPDF-6.X.Y
     ./configure --prefix=/path/for/installation
@@ -33,8 +34,46 @@ dependencies. Earlier versions rely on the Boost C++ header library. We
 recommend upgrading to the current series to avoid that complication (and
 benefit from other improvements, too).
 
+At run-time you may need to set some environment variable: see the next section
+for details.
 
-@section compilers Build tools
+
+@section install_paths Run-time search paths
+
+If you aren't installing LHAPDF into a standard, system-wide location, you will
+probably need to set some environment variables for it to work at runtime (and
+perhaps even during the installation).
+
+LHAPDF's primary installation mode is as a shared library, `libLHAPDF.so` (or
+`libLHAPDF.dylib` on Macs). This minimises code duplication and application
+rebuilds by being the single source of compiled code on your system --
+executables just refer to `libLHAPDF`'s code symbols at runtime rather than
+having to "statically" copy them into their own code. (If you *really* want
+static linking, make sure to provide the `-static` flag when linking your
+application, of point it explicitly at `libLHAPDF.a`.) Shared libraries need to
+be locateable at runtime, though, which means that you need to either place them
+in a standard "system" location, or set an environment variable to add your own
+custom install paths (usually `lib/` or `lib64/` within your installation tree)
+to the library-search mechanism. The environment variable for shared-library
+searching is `LD_LIBRARY_PATH` on Linux systems, and `DYLD_LIBRARY_PATH` on
+Macs (and FreeBSD).
+
+The same logic applies also to LHAPDF's own executables, which should live in
+the `bin/` directory within your installation tree, and its Python package which
+typically lives in `lib/pythonX.Y/site-packages`. The relevant environment
+variables are respectively `PATH` and `PYTHONPATH` for these searches. You may
+need to set at least the Python search path *before* installation, since this is
+under control of Python's own installer mechanism, which can be quite zealous.
+
+A sample environment variable setup, placing a new LHAPDF custom installation
+under `/foo/lhapdf`, to be searched *after* other custom locations, is
+
+    export PATH=$PATH:/foo/lhapdf/bin
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/foo/lhapdf/lib
+    export PYTHONPATH=$PYTHONPATH:/foo/lhapdf/lib/python3.9/site-packages
+
+
+@section install_compilers Build tools
 
 LHAPDF6 just needs your system to have a copy of Make and a C++11 compiler:
 there is no Fortran code and hence no need for gfortran. We have tested with
@@ -50,15 +89,20 @@ and Python versions, and other such fun. If you want to build LHAPDF on a Mac,
 please see @ref osx.
 
 
-@subsection pyext Python
+@subsection install_pyext Python
 
 If you want to build the Python interface to LHAPDF (which is very nice!), you
 will need the Python development headers to be installed (e.g. via the
 `python-dev` Ubuntu package). If the `Python.h` header is not found by
 `configure`, no Python extension module will be built.
 
+You may also need to make sure that the `PYTHONPATH` environment variable (see
+above) is set to include your module-installation directory *before* installing,
+if it isn't a system-wide path: Python is sometimes configured to refuse to
+install to locations not already in the Python search path.
 
-@section lhapdf Building LHAPDF
+
+@section install_lhapdf Building LHAPDF
 
 If you have downloaded a release tarball for LHAPDF 6.X.Y, unpack it with `tar
 xf LHAPDF-6.X.Y.tar.gz`, then `cd` to the newly-created directory.
@@ -76,11 +120,8 @@ you don't want to install to `/usr/local`, which is the default). For example,
 
     ./configure --prefix=$HOME/local
 
-An example build script for LHAPDF6 on the CERN lxplus6 system is shown at the
-end of these instructions.
 
-
-@subsection altcomp Alternative compilers
+@subsection install_altcomp Alternative compilers
 
 If you want to use an alternative C++ compiler, then you can specify the CXX
 variable on the command line. This is essential on OS X Mavericks and later,
@@ -101,46 +142,7 @@ location that you specified, call `make install`. You will (or at least
 `$prefix/share/LHAPDF`.
 
 
-@section lxplus Building on lxplus / LCG
-
-CERN's lxplus6 shared system is always an awkward environment to build packages,
-since the system compiler etc. are not part of the LCG supported list of
-architectures.
-
-The SLC6 system compiler is too old to support C++11, and hence
-setting up a non-system compiler (and consistent Python) is mandatory even if not
-wishing to interact with LCG/experiment tools; on CC7 the system compiler is (just)
-new enough for C++11, and so you can use the system environment and make a completely
-standard build if you don't need to be LCG-compatible.
-
-Here is an example of how to build LHAPDF using LCG tools on lxplus6 and lxplus7 --
-although you can of course use other compilers, Python versions, build flags, etc. as you wish.
-
-    ## Set up LCG compiler & Python (required on SLC6/lxplus6, optional on CC7/lxplus7)
-    source /cvmfs/sft.cern.ch/lcg/releases/LCG_87/gcc/4.9.3/x86_64-slc6/setup.sh
-    source /cvmfs/sft.cern.ch/lcg/releases/LCG_87/Python/2.7.10/x86_64-slc6-gcc49-opt/Python-env.sh
-
-    ## Make an install directory
-    mkdir local
-
-    ## Build LHAPDF
-    wget http://www.hepforge.org/archive/lhapdf/LHAPDF-6.X.Y.tar.gz -O- | tar xz
-    cd LHAPDF-6.X.Y
-    ./configure --prefix=$PWD/../local
-    make -j2 && make install
-    cd ..
-
-    ## Set environment variables
-    export PATH=$PWD/local/bin:$PATH
-    export LD_LIBRARY_PATH=$PWD/local/lib:$LD_LIBRARY_PATH
-    export PYTHONPATH=$PWD/local/lib64/python2.6/site-packages:$PYTHONPATH
-
-    ## Test the scripts
-    lhapdf-config --help
-    lhapdf list
-
-
-@section osx Building on Mac OS X
+@section install_osx Building on Mac OS X
 
 Builds are typically straightforward on Linux, but Mac OS X unfortunately has a
 long history of incoherent system compiler setups, which have been worked around
@@ -166,43 +168,9 @@ not building the very useful Python interface to LHAPDF.
 The Mac OS X "Homebrew" system (http://brew.sh/) comes recommended by several
 LHAPDF developers. Many HEP packages are already available for Homebrew via the
 homebrew-hep project: http://davidchall.github.io/homebrew-hep/ . Success has
-also been reported with the MacPorts system (http://www.macports.org/): please
-see HepForge's information about MacPorts at https://www.hepforge.org/docs/macosx .
+also been reported with the MacPorts system (http://www.macports.org/).
 With both these approaches, you should set your environment to *only* use
 compilers and Python from the Brew/Ports area and to ignore the system packages:
 a hybrid approach will only cause unnecessary pain.
-
-
-@section boost Boost (for LHAPDF < 6.2)
-
-Until LHAPDF 6.2.0, we made use of header files from the Boost C++ utility
-library (http://www.boost.org). This made building LHAPDF a bit more complex,
-and for reference we include some troubleshooting information here... for
-now. The much better solution, however, is to use the current version which has
-no such dependency.
-
-If Boost is installed in the system `/usr` directory tree, via your machine's
-packaging system, it should be discovered automatically. If not, you will need to use
-something like
-
-    ./configure --prefix=$HOME/local --with-boost=$HOME/pkgs/boost-1_58
-
-for your LHAPDF configuration step.
-
-On Linux machines, Boost this should typically be available via
-your system's packaging mechanism, e.g. the `libboost-all-dev` package on Ubuntu
-and other Debian derivatives. On Scientific Linux 6 the system installation of
-Boost is sufficient.
-
-Building Boost by hand is not particularly simple and should not be needed in
-most cases: we recommend avoiding this! If you have access to the CERN AFS
-filesystem, you can find builds of Boost for various platforms in the
-`/afs/cern.ch/sw/lcg/external/Boost/` directory. If you really want or need to
-do it manually, version 6.0.5 and later of LHAPDF only use Boost headers
-(previous ones used compiled libraries) and rather than fully building Boost,
-you can just use the header files direct from its source tarball: this is not
-wonderfully neat, but is a lot easier than doing a full manual build and
-installation of the Boost libraries.
-
 
 */

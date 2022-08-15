@@ -1,3 +1,283 @@
+2022-08-12  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Version 6.5.2 release.
+
+	* Fix range of member iteration when computing correlations with
+	the next extended-errorset scheme. Thanks to Marjorie Shapiro for
+	highlighting the issue and fix.
+
+2022-07-27  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Update internal yaml-cpp version to fix compiler warnings.
+
+	* Complete distutils removal on main.
+
+2022-07-16  Max Knobbe  <max.knobbe@uni-goettingen.de>
+
+	* Fix bug in lepton PDF lookup.
+
+2022-06-06  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Fail with an actually helpful exception message if lhapdf.conf
+	can't be found.
+
+2022-05-16  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Version 6.5.1 release.
+
+	* Add uncertainty testing to release process.
+
+	*Fix typo in PDFSet.cc use of default uncertainty CL in
+	percent. Thanks to Christoph Schwan for rapid detection and debug.
+
+2022-05-13  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Version 6.5.0 release.
+
+2022-05-12  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Remove distutils dependency from configure, fall back to using
+	setuptools if possible in Python extension build, and update
+	Python version detection macros.
+
+2022-05-11  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Apply thread locality fixes to caches, active-set management in
+	LHAGlue, and non-MPI file-IO objects. Thanks to Christoph Schwan.
+
+2022-04-21  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Add PDFSet::uncertainties() methods to compute multiple
+	observable uncertainties at once.
+
+	* Chain the in-place and return by value PDFSet::uncertainty()
+	methods in the more efficient order.
+
+	* Lazily cache the PDFSet error-info struct.
+
+2022-04-03  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Add a parser for the extended error-type string format, and
+	start implementation of the extended uncertainty computation using
+	it.
+
+2022-04-12  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Use the PDFSet::lhapdfID() function by preference to return a
+	PDF::lhapdfID(), thereby avoiding the index-file lookup if
+	possible.
+
+2022-04-01  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Assemble the PDF-set index from _all_ pdfsets.index files found
+	in the search paths, with earlier appearances taking precedence:
+	allows use of partial indices in overload directories.
+
+2021-09-21  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Version 6.4.0 release.
+
+2021-09-16  Max Knobbe  <max.knobbe@uni-goettingen.de>
+
+	* Restructure internal memory storage to increase performance and
+	simplify caching common computations for different particles. Most notably
+	replace KnotArray1F and KnotArrayNF with single class KnotArray.
+
+	* Precompute coefficients for polynomial interpolators at init time.
+
+	* Add specialised method to interpolators, to evaluate pdf's for all
+	common particles (-6,...-6,21) and allow for the caching of common computations
+	without	the need of a complicated cache.
+
+2021-08-13  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Update the fast ASCII NumParser to always use the C
+	locale. Thanks to Dmitry Kalinkin for highlighting the issue.
+
+	* Enable out-of-source builds, avoiding sensitivity to
+	pre-installed versions during the build, and converting the Cython
+	syntax to Py3-style. Thanks to Christian Holm Christensen for the
+	patch.
+
+2021-06-25  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Bugfix to Python wrapper object parentage handling, from Dmitry Kalinkin.
+
+2021-05-14  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Add a PIDs::PIDCode enum (and PIDs enum with equivalent
+	signature in Python) for more semantic access to particle ID
+	codes.
+
+2021-04-06  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Update embedded yaml-cpp code to version 0.6.3.
+
+2021-03-31  Andy Buckley  <andy.buckley@cern.ch>
+
+	* PDFSet::uncertainties() now allows alternative=True for
+	non-replica sets (in which case it does nothing). This is more
+	convenient when calculating uncertainties over many error-set
+	types and you want to use the alternatives mode should any of them
+	be replica sets.
+
+2020-11-27  Andy Buckley  <andy.buckley@cern.ch>
+
+	* lhapdf script bugfixes and improvements, including only
+	complaining about failed URLs after *all* attempts have failed.
+
+2020-07-28  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Add matching by ID code to the lhapdf list and show commands.
+
+2020-07-01  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Version 6.3.0!
+
+	* Provide setter methods on PDF for the flavour list and
+	setPositive behaviour. Thanks to Valerio Bertone for the request.
+
+	* Convert the AlphaS raw pointer on PDF to a std::unique_ptr.
+
+2020-06-23  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Update the cache strategy for 'replays' (thanks to Tim Martin
+	for the profiling and diagnosis), and make cache size and
+	search/update strategy configurable at runtime.
+
+2020-06-18  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Extend caches to multi-level, searching through the N previous
+	calls for x and Q2 independently.
+
+2020-06-17  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Make the caches fully thread-safe rather than just
+	initialization-safe, by use of maps on thread IDs.
+
+2020-05-30  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Extend to cross-flavour, subgrid-specific x and Q2 caches.
+
+	* Use the x and Q2 knot hashes in cache-flushing tests.
+
+	* Add a hash function computation and comparator to the KnotArray1F.
+
+2020-05-28  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Convert caching struct acquisition to use a Meyers Singleton
+	pattern, which guarantees thread-locality.
+
+	* Separate caching of x and Q2 variables in the
+	LogBicubicInterpolator: evidence suggests that these may be
+	updated at very different rates.
+
+2020-05-27  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Add simple caching to the LogBicubicInterpolator -- will cache
+	contiguous calls of the same (x,Q). Credit to Dmitri Konstantinov
+	and Grigorii Latyshev for the patch. Needs thread-safety
+	work. Significant CPU savings in many contexts.
+
+2019-12-17  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Add a Python mapping of the findFile() function.
+
+2019-09-04  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Add convenience accessor attributes to PDFUncertainty in Python.
+
+2019-08-14  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Fix lhapdf script handling of unknown index file and data
+	directory paths. Thanks to Mateusz Ploskon.
+
+2019-07-30  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Use ast abstract syntax tree standard module rather than yaml to
+	parse metadata value strings in Python.
+
+	* Make PDFInfo Python mapping inherit from Info.
+
+	* Change annotation storage to be pure YAML format rather than
+	hand-rolled approximation for limited types.
+
+	* Upgrade bundled yaml-cpp to v0.6.0 to solve parsing issues with
+	complex types (thanks to Zahari Kassabov.)
+
+2019-07-08  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Actually delete the previous AlphaS object when calling PDF::setAlphaS().
+
+2019-06-04  Graeme Watt  <graeme.watt@durham.ac.uk>
+
+	* Modify lhapdf script to support Content-Length in HTTP header not
+	given as a list so that file size is calculated correctly for CERN EOS.
+
+2019-05-21  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Bugfix release 6.2.3!
+
+	* Add a couple of extra trim() calls to path strings given to the Fortran API.
+
+2019-05-11  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Apply lhapdf script improvement from Ivan Razumov / Genser.
+
+2019-05-10  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Version 6.2.2!
+
+2019-05-08  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Don't pop the final path entry off in the pathsPrepend and
+	pathsAppend functions: the compile-time fallback may have been
+	disabled.
+
+2019-05-02  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Add a 'show' option to the lhapdf script.
+
+	* Adapt MPI file-reading patch from Stefan Hoeche. Enable with --enable-mpi to configure.
+
+	* Rewrite the lhapdf data-manager script to use argparse, for compatibility with Python 3.
+
+2019-03-29  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Apply compiler optimisation bypass "volatile" hack to default
+	data path insertion. Thanks to Zahari Kassabov.
+
+2018-12-17  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Add legend PDF name aliasing to plotpdfs
+
+2018-11-01  Graeme Watt  <graeme.watt@durham.ac.uk>
+
+	* Explicitly catch x > xMax error in ContinuationExtrapolator.
+
+2018-10-24  Graeme Watt  <graeme.watt@durham.ac.uk>
+
+	* Don't require the presence of Content-Length in HTTP header.
+
+2018-10-19  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Utils.h: Fix separator bug in join() function. Thanks to Dmitry Kalinkin.
+
+2018-08-20  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Remove 'const's from return-by-value types in KnotArray.h, to keep icpc happy.
+
+2018-05-16  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Add lhapdf_lambda4/5 functions in the Fortran interface.
+
+	* Remove unwanted pid argument from the Fortran xfx*_stdpartons functions.
+
+2018-01-25  Andy Buckley  <andy.buckley@cern.ch>
+
+	* Move Config::get() static function from header to .cc, since a
+	singleton needs to only 'live' in one compilation unit.
+
 2017-09-05  Andy Buckley  <andy.buckley@cern.ch>
 
 	* Version 6.2.1!

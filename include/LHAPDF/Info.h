@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_Info_H
@@ -10,7 +10,6 @@
 #include "LHAPDF/Utils.h"
 #include "LHAPDF/Paths.h"
 #include "LHAPDF/Exceptions.h"
-#include <fstream>
 
 namespace LHAPDF {
 
@@ -30,9 +29,6 @@ namespace LHAPDF {
   class Info {
   public:
 
-    /// @name Creation and deletion
-    //@{
-
     /// Default constructor
     Info() { }
 
@@ -44,11 +40,9 @@ namespace LHAPDF {
     /// Virtual destructor to allow inheritance
     virtual ~Info() { }
 
-    //@}
-
 
     /// @name Loading info from YAML files
-    //@{
+    ///@{
 
     /// Populate this info object from the specified YAML file path.
     ///
@@ -56,11 +50,11 @@ namespace LHAPDF {
     /// YAML source files. Values for existing keys will be overwritten.
     void load(const std::string& filepath);
 
-    //@}
+    ///@}
 
 
     /// @name General metadata accessors
-    //@{
+    ///@{
 
     // /// Get all metadata as a map
     // const std::map<std::string, std::string>& metadata() const {
@@ -148,7 +142,7 @@ namespace LHAPDF {
       _metadict[key] = to_str(val);
     }
 
-    //@}
+    ///@}
 
 
   protected:
@@ -159,8 +153,9 @@ namespace LHAPDF {
   };
 
 
+
   /// @name Info metadata function template specialisations
-  //@{
+  ///@{
 
   template <>
   inline bool Info::get_entry_as(const std::string& key) const {
@@ -178,7 +173,12 @@ namespace LHAPDF {
   template <>
   inline std::vector<std::string> Info::get_entry_as(const std::string& key) const {
     static const string delim = ",";
-    return split(get_entry(key), delim);
+    string strval = trim(get_entry(key));
+    // cout << "@@ " << strval << endl;
+    if (startswith(strval, "[")) strval = strval.substr(1, strval.size()-1);
+    if (endswith(strval, "]")) strval = strval.substr(0, strval.size()-1);
+    // cout << "## " << strval << endl;
+    return split(strval, delim);
   }
 
   template <>
@@ -186,8 +186,7 @@ namespace LHAPDF {
     const vector<string> strs = get_entry_as< vector<string> >(key);
     vector<int> rtn;
     rtn.reserve(strs.size());
-    // for (const string& s : strs) rtn.push_back( lexical_cast<int>(s) ); //< @todo Restore when C++11 guaranteed
-    for (size_t i = 0; i < strs.size(); ++i) rtn.push_back( lexical_cast<int>(strs[i]) );
+    for (const string& s : strs) rtn.push_back( lexical_cast<int>(s) );
     assert(rtn.size() == strs.size());
     return rtn;
   }
@@ -197,13 +196,12 @@ namespace LHAPDF {
     const vector<string> strs = get_entry_as< vector<string> >(key);
     vector<double> rtn;
     rtn.reserve(strs.size());
-    //for (const string& s : strs) rtn.push_back( lexical_cast<double>(s) ); //< @todo Restore when C++11 guaranteed
-    for (size_t i = 0; i < strs.size(); ++i) rtn.push_back( lexical_cast<double>(strs[i]) );
+    for (const string& s : strs) rtn.push_back( lexical_cast<double>(s) );
     assert(rtn.size() == strs.size());
     return rtn;
   }
 
-  //@}
+  ///@}
 
 
 }

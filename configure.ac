@@ -1,7 +1,7 @@
 ## Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([LHAPDF],[6.2.1],[lhapdf@projects.hepforge.org],[LHAPDF])
+AC_INIT([LHAPDF],[6.5.2],[lhapdf-support@cern.ch],[LHAPDF])
 if test "$prefix" = "$PWD"; then
   AC_MSG_ERROR([Installation into the build directory is not supported: use a different --prefix argument])
 fi
@@ -39,13 +39,31 @@ AC_LANG(C++)
 AC_CONFIG_SRCDIR([src/GridPDF.cc])
 AC_CONFIG_HEADERS([config/config.h include/LHAPDF/Version.h])
 
+
 ## Set default C++ optimisation level to -O3 and drop the -g debug flag
 if test -z $CXXFLAGS; then
     CXXFLAGS='-O3'
 fi
 
+## MPI support wanted?
+AC_ARG_ENABLE([mpi],
+  AC_HELP_STRING([--enable-mpi], [enable MPI-safe file reading]),
+  [enable_mpi=yes], [])
+
+## Test for C++ compiler, possibly with MPI support
+AX_PROG_CXX_MPI([test x$enable_mpi = xyes], [have_mpi=yes], [have_mpi=no])
+if test x$enable_mpi = xyes; then
+  if test x$have_mpi = xyes; then
+    AC_DEFINE([HAVE_MPI], "1", [using MPI])
+    using_mpi=yes
+  else
+    AC_MSG_FAILURE([MPI compiler not found.])
+    using_mpi=no
+  fi
+fi
+AM_CONDITIONAL(USING_MPI, [test x$using_mpi = xyes])
+
 ## Require C++11
-AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX([11], [noext], [mandatory])
 
 ## Substitute compiler flags for the lhapdf-config script
@@ -54,6 +72,8 @@ AC_SUBST(LHAPDF_CXX)
 LHAPDF_CXXFLAGS="$CXXFLAGS"
 AC_SUBST(LHAPDF_CXXFLAGS)
 
+
+## More standard build tool checks
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
@@ -85,11 +105,6 @@ if test x$enable_lhaglue_cxx == xyes; then flag=1; else flag=0; fi
 AC_DEFINE_UNQUOTED(LHAPDF_LHA5CXX, $flag, "Whether LHAPDF5 C++ compatibility is available")
 
 
-## Find pdflatex if possible
-AC_PATH_PROG(PDFLATEX, pdflatex)
-AM_CONDITIONAL(WITH_PDFLATEX, [test x$PDFLATEX != x])
-
-
 ## Find Doxygen if possible
 AC_PATH_PROG(DOXYGEN, doxygen)
 AM_CONDITIONAL(WITH_DOXYGEN, [test x$DOXYGEN != x])
@@ -100,16 +115,22 @@ AC_ARG_ENABLE([python],
   [AC_HELP_STRING(--disable-python, [disable the build of the Python interface (default=enabled)])],
   [], [enable_python=yes])
 if test x$enable_python == xyes; then
-  AC_PATH_PROG(PYTHON, python)
+  AX_PYTHON_DEVEL([>= '2.7.3'])
   if test x$PYTHON != x; then
     PYTHON_VERSION=`$PYTHON -c "import sys; print('.'.join(map(str, sys.version_info@<:@:2@:>@)))"`
+    PYTHON_FULL_VERSION=`$PYTHON -c 'from __future__ import print_function; import platform; print(platform.python_version())'`
+    PYTHON_MAJOR_VERSION=`$PYTHON -c 'from __future__ import print_function; import sys; print(sys.version_info.major)'`
     AC_SUBST(PYTHON_VERSION)
-    PYTHON_PATH=`$PYTHON -c "import distutils.sysconfig; print(distutils.sysconfig.get_python_lib(prefix='$prefix', plat_specific=True))"`
+    AC_SUBST(PYTHON_FULL_VERSION)
+    AC_SUBST(PYTHON_MAJOR_VERSION)
+    PYTHON_PATH=`$PYTHON -c "from __future__ import print_function; import sysconfig; print(sysconfig.get_path('platlib', 'posix_user', vars={'userbase' : '$prefix'}))"`
     AC_SUBST(PYTHON_PATH)
+    AC_MSG_NOTICE([LHAPDF Python library to be installed to $PYTHON_PATH])
   fi
-  AM_CHECK_CYTHON([0.19], [:], [:])
+  AM_CHECK_CYTHON([0.24], [:], [:])
   if test x$CYTHON_FOUND = xyes; then
-    AC_MSG_NOTICE([Cython >= 0.19 found: Python extension source can be rebuilt (for developers)])
+    AC_MSG_NOTICE([Cython >= 0.24 found: Python extension source can be rebuilt (for developers)])
+    for i in wrappers/python/*.pyx; do touch $i; done
   fi
 fi
 AM_CONDITIONAL(WITH_PYTHON, [test x$PYTHON != x])
@@ -132,6 +153,7 @@ AC_CEDAR_CHECKCXXFLAG([-pedantic], [AM_CXXFLAGS="$AM_CXXFLAGS -pedantic "])
 AC_CEDAR_CHECKCXXFLAG([-Wall], [AM_CXXFLAGS="$AM_CXXFLAGS -Wall "])
 AC_CEDAR_CHECKCXXFLAG([-Wno-long-long], [AM_CXXFLAGS="$AM_CXXFLAGS -Wno-long-long "])
 AC_CEDAR_CHECKCXXFLAG([-Qunused-arguments], [AM_CPPFLAGS="$AM_CPPFLAGS -Qunused-arguments "])
+AC_CEDAR_CHECKCXXFLAG([-Wshadow], [AM_CPPFLAGS="$AM_CPPFLAGS -Wshadow "])
 
 
 ## Include $prefix in the compiler flags for the rest of the configure run
@@ -153,13 +175,13 @@ AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([src/yamlcpp/Makefile])
 AC_CONFIG_FILES([include/Makefile include/LHAPDF/Makefile])
 AC_CONFIG_FILES([bin/Makefile])
-AC_CONFIG_FILES([bin/lhapdf bin/lhapdf-config])
+AC_CONFIG_FILES([bin/lhapdf-config])
 AC_CONFIG_FILES([examples/Makefile])
 AC_CONFIG_FILES([tests/Makefile])
 AC_CONFIG_FILES([doc/Makefile doc/Doxyfile])
 AC_CONFIG_FILES([lhapdf.pc])
 AC_CONFIG_FILES([wrappers/Makefile])
-AC_CONFIG_FILES([wrappers/python/Makefile wrappers/python/setup.py])
+AC_CONFIG_FILES([wrappers/python/Makefile wrappers/python/build.py])
 dnl AC_CONFIG_FILES([wrappers/octave/Makefile])
 AC_OUTPUT
 
@@ -171,15 +193,16 @@ echo "IMPORTANT INFORMATION ABOUT PDF SETS"
 echo
 echo "LHAPDF no longer bundles PDF set data in the package tarball."
 echo "The sets are instead all stored online at"
-echo "  http://www.hepforge.org/archive/lhapdf/pdfsets/${PACKAGE_MAJOR_VERSION}/"
+echo "  http://lhapdfsets.web.cern.ch/lhapdfsets/current/"
 echo "and you should install those that you wish to use into"
 echo "  $pkgdatadir"
 echo
 echo "The downloadable PDF sets are packaged as tarballs, which"
-echo "must be expanded to be used. Here is an example of how to"
-echo "retrieve and install a PDF set from the command line:"
-echo
-echo " wget http://www.hepforge.org/archive/lhapdf/pdfsets/${PACKAGE_MAJOR_VERSION}/CT10nlo.tar.gz -O- | tar xz -C $pkgdatadir"
+echo "must be expanded to be used. The simplest way to do this is with"
+echo "the 'lhapdf' script, e.g. to install the CT10nlo PDF set:"
+echo "  lhapdf install CT10nlo"
+echo "The same effect can be achieved manually with, e.g.:"
+echo "  wget http://lhapdfsets.web.cern.ch/lhapdfsets/current/CT10nlo.tar.gz -O- | tar xz -C $pkgdatadir"
 echo
 echo "****************************************************************"
 echo

@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/PDF.h"
 #include "LHAPDF/PDFSet.h"
@@ -78,16 +78,11 @@ namespace LHAPDF {
     for (int id : flavors()) rtn[id] = xfxQ2(id, x, q2);
   }
 
-
   void PDF::xfxQ2(double x, double q2, std::vector<double>& rtn) const {
     rtn.clear();
     rtn.resize(13);
-    for (int i = 0; i < 13; ++i) {
-      const int id = i-6; // PID = 0 is automatically treated as PID = 21
-      rtn[i] = xfxQ2(id, x, q2);
-    }
+    _xfxQ2(x, q2, rtn);
   }
-
 
   std::map<int, double> PDF::xfxQ2(double x, double q2) const {
     std::map<int, double> rtn;
@@ -115,10 +110,13 @@ namespace LHAPDF {
 
 
   int PDF::lhapdfID() const {
-    //return set().lhapdfID() + memberID()
-    /// @todo Add failure tolerance if pdfsets.index not found
+    const int memid = memberID();
     try {
-      return lookupLHAPDFID(_setname(), memberID());
+      try {
+        return set().lhapdfID() + memid;
+      } catch (const Exception&) {
+        return lookupLHAPDFID(_setname(), memid);
+      }
     } catch (const Exception&) {
       return -1; //< failure
     }

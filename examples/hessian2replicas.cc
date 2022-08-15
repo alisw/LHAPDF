@@ -4,6 +4,7 @@
 
 #include "LHAPDF/LHAPDF.h"
 #include <random>
+#include <fstream>
 using namespace std;
 
 // Function to convert Hessian "set" to replica set with name "randsetname"
@@ -159,47 +160,47 @@ void convertHessianToReplicas(const LHAPDF::PDFSet& set, const string& randsetna
   // Copy information from original .info file to new .info file.
   /// @todo Wouldn't it be nicer to use the PDFSet metadata system for this rather than re-parse the .info?
   const string setinfopath = LHAPDF::findpdfsetinfopath(set.name());
-  ifstream infile (setinfopath.c_str());
-  if (infile.good()) {
+  ifstream infileinfo (setinfopath.c_str());
+  if (infileinfo.good()) {
     cout << "Reading info file from " << setinfopath << endl;
   } else {
     throw LHAPDF::ReadError("Error reading " + setinfopath);
   }
   const string randsetinfopath = randdir+"/"+randsetname+"/"+randsetname+".info";
-  ofstream outfile (randsetinfopath.c_str());
-  if (outfile.good()) {
+  ofstream outfileinfo (randsetinfopath.c_str());
+  if (outfileinfo.good()) {
     cout << "Writing info file to " << randsetinfopath << endl;
   } else {
     throw LHAPDF::Exception("Error writing to " + randsetinfopath);
   }
   string line;
-  while (getline(infile, line)) {
+  while (getline(infileinfo, line)) {
     LHAPDF::trim(line);
     if (LHAPDF::contains(line, "SetDesc")) {
-      outfile << "SetDesc: \"Based on original " << set.name() << ".  This set has " << nrep+1 << " member PDFs.  mem=0 => average over " << nrep << " random PDFs; mem=1-" << nrep << " => " << nrep << " random PDFs generated using ";
+      outfileinfo << "SetDesc: \"Based on original " << set.name() << ".  This set has " << nrep+1 << " member PDFs.  mem=0 => average over " << nrep << " random PDFs; mem=1-" << nrep << " => " << nrep << " random PDFs generated using ";
       if (symmetrise) {
-        outfile << "corrected Eq. (6.5) of arXiv:1205.4024v2\"" << endl;
+        outfileinfo << "corrected Eq. (6.5) of arXiv:1205.4024v2\"" << endl;
       } else {
-        outfile << "Eq. (6.4) of arXiv:1205.4024v2\"" << endl;
+        outfileinfo << "Eq. (6.4) of arXiv:1205.4024v2\"" << endl;
       }
     } else if (LHAPDF::contains(line, "SetIndex")) {
       // Miss out SetIndex.
     } else if (LHAPDF::contains(line, "NumMembers")) {
-      outfile << "NumMembers: " << nrep+1 << endl;
+      outfileinfo << "NumMembers: " << nrep+1 << endl;
     } else if (LHAPDF::contains(line, "ErrorType")) {
-      outfile << "ErrorType: replicas" << endl;
+      outfileinfo << "ErrorType: replicas" << endl;
     } else if (LHAPDF::contains(line, "ErrorConfLevel")) {
       // Miss out ErrorConfLevel.
     } else {
-      // outfile << line << endl;
+      // outfileinfo << line << endl;
       istringstream tokens(line);
       string word;
       tokens >> word;
-      if (LHAPDF::endswith(word, ":")) outfile << line << endl;
+      if (LHAPDF::endswith(word, ":")) outfileinfo << line << endl;
     }
   }
-  infile.close();
-  outfile.close();
+  infileinfo.close();
+  outfileinfo.close();
 
   // Loop over number of members, storing metadata and (x,Q,flavor) values.
   // Check that (x,Q,flavor) values are equal for all members.

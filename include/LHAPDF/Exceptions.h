@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_Exceptions_H
@@ -13,8 +13,8 @@
 namespace LHAPDF {
 
 
-  /// @name Exception classes for error handling
-  //@{
+  /// @defgroup exceptions Exception classes for error handling
+  ///@{
 
   /// @brief Generic unspecialised LHAPDF runtime error.
   ///
@@ -106,7 +106,7 @@ namespace LHAPDF {
   };
 
 
-  /// Problem exists between keyboard and chair.
+  /// Problem exists between keyboard and chair
   class UserError : public Exception {
   public:
     /// Constructor with error description string
@@ -121,7 +121,7 @@ namespace LHAPDF {
     NotImplementedError(const std::string& what) : Exception(what) {}
   };
 
-  //@}
+  ///@}
 
 
 }

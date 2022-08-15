@@ -1,15 +1,65 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/Utils.h"
 
+#include <sys/stat.h>
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
+
 namespace LHAPDF {
+
+
+  /// Check if a path @a p (either file or dir) exists
+  bool path_exists(const std::string& p,int mode)
+  {
+    return file_exists(p,mode) || dir_exists(p,mode);
+  }
+
+  /// Check if a file @a p exists
+  bool file_exists(const std::string& file,int mode)
+  {
+    int exists(false);
+    #ifdef HAVE_MPI
+    if (mode==1 || MPI::COMM_WORLD.Get_rank()==0) {
+      struct stat fst;
+      if (stat(file.c_str(), &fst) != -1) exists = (fst.st_mode & S_IFMT) == S_IFREG;
+    }
+    if (mode!=1) MPI::COMM_WORLD.Bcast(&exists,1,MPI_INT,0);
+    #else
+    struct stat fst;
+    if (stat(file.c_str(), &fst) != -1) exists = (fst.st_mode & S_IFMT) == S_IFREG;
+    #endif
+    return exists;
+  }
+
+  /// Check if a dir @a p exists
+  bool dir_exists(const std::string& dir,int mode)
+  {
+    int exists(false);
+    #ifdef HAVE_MPI
+    if (mode==1 || MPI::COMM_WORLD.Get_rank()==0) {
+      struct stat fst;
+      if (stat(dir.c_str(), &fst) != -1) exists = (fst.st_mode & S_IFMT) == S_IFDIR;
+    }
+    if (mode!=1) MPI::COMM_WORLD.Bcast(&exists,1,MPI_INT,0);
+    #else
+    struct stat fst;
+    if (stat(dir.c_str(), &fst) != -1) exists = (fst.st_mode & S_IFMT) == S_IFDIR;
+    #endif
+    return exists;
+  }
+
+
 
   namespace {
 
-    /// @todo Tidy up
+    /// gamma functions from Cephes library -- http://www.netlib.org/cephes
+    /// Copyright 1985, 1987, 2000 by Stephen L. Moshier
+
     static const double kMACHEP = 1.11022302462515654042363166809e-16;
     static const double kMAXLOG = 709.782712893383973096206318587;
     static const double kBig = 4.503599627370496e15;
@@ -18,10 +68,6 @@ namespace LHAPDF {
     double igamc(double a, double x);
     double igam(double a, double x);
 
-    /// @name gamma functions from Cephes library -- http://www.netlib.org/cephes
-    ///
-    /// Copyright 1985, 1987, 2000 by Stephen L. Moshier
-    //@{
 
     /// @brief Incomplete gamma function (complement integral)
     ///
@@ -42,11 +88,11 @@ namespace LHAPDF {
 
       if (x <= 0) return 1.0;
 
-      if( (x < 1.0) || (x < a) )
+      if ( (x < 1.0) || (x < a) )
         return( 1.0 - igam(a,x) );
 
       ax = a * log(x) - x - lgamma(a);
-      if( ax < -kMAXLOG )
+      if ( ax < -kMAXLOG )
         return( 0.0 );
 
       ax = exp(ax);
@@ -69,7 +115,7 @@ namespace LHAPDF {
           yc = y * c;
           pk = pkm1 * z  -  pkm2 * yc;
           qk = qkm1 * z  -  qkm2 * yc;
-          if(qk)
+          if (qk)
             {
               r = pk/qk;
               t = fabs( (ans - r)/r );
@@ -81,7 +127,7 @@ namespace LHAPDF {
           pkm1 = pk;
           qkm2 = qkm1;
           qkm1 = qk;
-          if( fabs(pk) > kBig )
+          if ( fabs(pk) > kBig )
             {
               pkm2 *= kBiginv;
               pkm1 *= kBiginv;
@@ -108,12 +154,12 @@ namespace LHAPDF {
 
       if (x <= 0)  return 0.0;
 
-      if( (x > 1.0) && (x > a ) )
+      if ( (x > 1.0) && (x > a ) )
         return( 1.0 - igamc(a,x) );
 
       /* Compute  x**a * exp(-x) / gamma(a)  */
       ax = a * log(x) - x - lgamma(a);
-      if( ax < -kMAXLOG )
+      if ( ax < -kMAXLOG )
         return( 0.0 );
 
       ax = exp(ax);
@@ -134,10 +180,7 @@ namespace LHAPDF {
       return( ans * ax/a );
     }
 
-    //@}
-
   }
-
 
 
   /// @brief Compute quantiles for standard normal distribution N(0, 1) at probability p
