@@ -1,35 +1,41 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/PDFIndex.h"
 #include "LHAPDF/Paths.h"
 #include "LHAPDF/Exceptions.h"
+#include "LHAPDF/FileIO.h"
 
 namespace LHAPDF {
 
 
   std::map<int, std::string>& getPDFIndex() {
-    static map<int, string> _lhaindex;
+    static thread_local map<int, string> _lhaindex;
     if (_lhaindex.empty()) { // The map needs to be populated first
-      string indexpath = findFile("pdfsets.index");
-      if (indexpath.empty()) throw ReadError("Could not find a pdfsets.index file");
-      try {
-        ifstream file(indexpath.c_str());
-        string line;
-        while (getline(file, line)) {
-          line = trim(line);
-          if (line.empty() || line.find("#") == 0) continue;
-          istringstream tokens(line);
-          int id; string setname;
-          tokens >> id;
-          tokens >> setname;
-          // cout << id << " -> " << _lhaindex[id] << endl;
-          _lhaindex[id] = setname;
+      vector<string> indexpaths = findFiles("pdfsets.index");
+      if (indexpaths.empty()) throw ReadError("Could not find any pdfsets.index files");
+      for (const string& indexpath : indexpaths) {
+        try {
+          IFile file(indexpath.c_str());
+          string line;
+          while (getline(*file, line)) {
+            line = trim(line);
+            if (line.empty() || line.find("#") == 0) continue;
+            istringstream tokens(line);
+            int id; string setname;
+            tokens >> id;
+            tokens >> setname;
+            // cout << id << " -> " << _lhaindex[id] << endl;
+            // Insert this line into the map iff it doesn't already exist: allows index merging & overriding
+            if (_lhaindex.count(id) == 0) {
+              _lhaindex[id] = setname;
+            }
+          }
+        } catch (const std::exception& ex) {
+          throw ReadError("Trouble when reading " + indexpath + ": " + ex.what());
         }
-      } catch (const std::exception& ex) {
-        throw ReadError("Trouble when reading " + indexpath + ": " + ex.what());
       }
     }
     return _lhaindex;
@@ -66,9 +72,7 @@ namespace LHAPDF {
 
 
   int lookupLHAPDFID(const std::string& setname, int nmem) {
-    // const map<int, string>& = getPDFIndex();
-    typedef pair<int, string> MapPair;
-    for (const MapPair& id_name : getPDFIndex()) {
+    for (const auto& id_name : getPDFIndex()) { //< auto to make clang happy re. key constness
       if (id_name.second == setname) return id_name.first + nmem;
     }
     return -1; //< failure value

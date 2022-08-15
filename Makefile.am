@@ -1,9 +1,10 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = src include wrappers tests bin
-DIST_SUBDIRS = $(SUBDIRS) examples doc
+SUBDIRS = src include wrappers tests bin examples doc
+#DIST_SUBDIRS = $(SUBDIRS) examples doc
 
 dist_noinst_SCRIPTS = mkindex plotpdfs testpdfs testlhapdf
+dist_noinst_DATA = CODINGSTYLE CONFIGFLAGS DATARELEASE DESIGN
 dist_pkgdata_DATA = lhapdf.conf pdfsets.index
 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -18,16 +19,17 @@ examples:
 if WITH_DOXYGEN
 doxy:
 	(cd doc && $(MAKE) doxy)
+doxy-upload: doxy
+	rsync -r doc/doxygen/ login.hepforge.org:lhapdf/public_html/
 endif
 
-if WITH_PDFLATEX
-manual:
-	(cd doc && $(MAKE) manual)
-endif
+## Clean out git
+#dist-hook:
+#	rm -rf `find $(distdir) -name ".git"`
 
-## Clean out SVN and hg files
-dist-hook:
-	rm -rf `find $(distdir) -name ".svn" -o -name ".hg"`
+# Upload tarball
+dist-upload: dist
+	rsync $(DIST_ARCHIVES) login.hepforge.org:lhapdf/downloads/
 
 ## Remove the unused & misleading share/LHAPDF/sets directory on both install and uninstall!
 # TODO: Remove this hook entirely after a couple of versions

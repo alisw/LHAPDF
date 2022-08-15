@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_Paths_H
@@ -12,8 +12,12 @@
 namespace LHAPDF {
 
 
-  /// @name File searching and search path handling functions
-  //@{
+  /// @defgroup search Searching for PDF data
+  ///@{
+
+
+  /// @name Search path handling functions
+  ///@{
 
   /// @brief Get the ordered list of search paths, from $LHAPDF_DATA_PATH and the install location
   /// @note The install prefix will be appended *unless* $LHAPDF_DATA_PATH ends with a double colon, i.e. '::'
@@ -31,7 +35,7 @@ namespace LHAPDF {
   inline void pathsPrepend(const std::string& p) {
     vector<string> ps = paths();
     ps.insert(ps.begin(), p);
-    ps.pop_back(); //< Discard the auto-added fallback path to the installed data prefix
+    //ps.pop_back(); //< Discard the auto-added fallback path to the installed data prefix
     setPaths(ps);
   }
 
@@ -39,7 +43,7 @@ namespace LHAPDF {
   /// Append to the search paths list
   inline void pathsAppend(const std::string& p) {
     vector<string> ps = paths();
-    ps.pop_back(); //< Discard the auto-added fallback path to the installed data prefix
+    //ps.pop_back(); //< Discard the auto-added fallback path to the installed data prefix
     ps.push_back(p);
     setPaths(ps);
   }
@@ -49,12 +53,15 @@ namespace LHAPDF {
   ///
   /// If no matching file is found, return an empty path.
   std::string findFile(const std::string& target);
-  //@}
+
+  /// Return all locations in which a file is found
+  std::vector<std::string> findFiles(const std::string& target);
+
+  ///@}
 
 
-
-  /// @name Functions for handling standard LHAPDF filename structures
-  //@{
+  /// @name PDF-specific path functions
+  ///@{
 
   inline std::string pdfmempath(const std::string& setname, int member) {
     const string memname = setname + "_" + to_str_zeropad(member) + ".dat";
@@ -77,8 +84,6 @@ namespace LHAPDF {
     return findFile(pdfsetinfopath(setname));
   }
 
-  //@}
-
 
   /// @brief Get the names of all available PDF sets in the search path
   ///
@@ -89,6 +94,8 @@ namespace LHAPDF {
   /// walking. It's assumed that new PDFs will not appear on the filesystem
   /// during a run: please let the authors know if that's not a good assumption!
   const std::vector<std::string>& availablePDFSets();
+
+  ///@}
 
 
 }

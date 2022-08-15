@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/AlphaS.h"
 #include "LHAPDF/Utils.h"
@@ -97,7 +97,7 @@ namespace LHAPDF {
   }
 
   void AlphaS::setFlavorScheme(FlavorScheme scheme, int nf) {
-    if( scheme == FIXED && nf == -1 ) throw Exception("You need to define the number of flavors when using a fixed scheme!");
+    if ( scheme == FIXED && nf == -1 ) throw Exception("You need to define the number of flavors when using a fixed scheme!");
     _flavorscheme = scheme;
     _fixflav = nf;
   }

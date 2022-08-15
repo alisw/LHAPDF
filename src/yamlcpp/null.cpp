@@ -1,12 +1,10 @@
 #include "yaml-cpp/null.h"
-#include "yaml-cpp/node.h"
 
-namespace LHAPDF_YAML
-{
-	_Null Null;
+namespace LHAPDF_YAML {
+_Null Null;
 
-	bool IsNull(const Node& node)
-	{
-		return node.Read(Null);
-	}
+bool IsNullString(const std::string& str) {
+  return str.empty() || str == "~" || str == "null" || str == "Null" ||
+         str == "NULL";
 }
+}  // namespace LHAPDF_YAML

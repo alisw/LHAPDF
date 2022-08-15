@@ -18,6 +18,11 @@ struct AnalyticPDF : public LHAPDF::PDF {
     return 0.15 * sin(20.0*x) * sin(20.0*q2);
   }
 
+  void _xfxQ2(double x, double q2, std::vector<double>& ret) const {
+    for (int id(-5); id<5; ++id)
+      _xfxQ2(id,x,q2);
+  }
+
   bool inRangeX(double x) const { return true; }
   bool inRangeQ2(double q2) const { return true; }
 

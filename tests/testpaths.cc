@@ -4,7 +4,16 @@
 #include <iostream>
 using namespace std;
 
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
+
 int main() {
+
+  #ifdef HAVE_MPI
+  MPI::Init();
+  #endif
+
   for (const string& p : LHAPDF::paths())
     cout << p << endl;
 

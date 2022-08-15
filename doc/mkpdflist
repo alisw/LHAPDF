@@ -1,10 +1,12 @@
 #! /usr/bin/env python
 # -*- python -*-
 
+from __future__ import print_function
 import sys
+
 import lhapdf
 lhapdf.setVerbosity(0)
-lhamajversion = ".".join( lhapdf.version().split(".")[:2] ) #< TODO: convert to full version?
+lhamajversion = ".".join(lhapdf.version().split(".")[:2])  # < TODO: convert to full version?
 
 sets = {}
 nvalid = 0
@@ -12,8 +14,8 @@ for psname in lhapdf.availablePDFSets():
     ps = lhapdf.getPDFSet(psname)
     if ps.lhapdfID > 0:
         if ps.lhapdfID in sets:
-            msg = "Duplicate LHAPDF ID = {lhaid:d}, {name2} replacing {name1}\n"\
-                  .format(lhaid=ps.lhapdfID, name1=sets[ps.lhapdfID].name, name2=psname)
+            msg = "Duplicate LHAPDF ID = {lhaid:d}, {name2} replacing {name1}\n" \
+                .format(lhaid=ps.lhapdfID, name1=sets[ps.lhapdfID].name, name2=psname)
             sys.stderr.write(msg)
         sets[ps.lhapdfID] = ps
         if ps.dataversion > 0:
@@ -24,8 +26,8 @@ s += "@page pdfsets PDF sets\n\n"
 
 s += """<b>Official LHAPDF&nbsp;{lhaversion} PDF sets: currently {nsets} available, of which {nvalid} are validated.</b>
 
-See http://www.hepforge.org/archive/lhapdf/pdfsets/{lhaversion} for data downloads.\n\n"""\
-     .format(nsets=len(sets), nvalid=nvalid, lhaversion=lhamajversion)
+See http://lhapdfsets.web.cern.ch/lhapdfsets/current/ for data downloads.\n\n""" \
+    .format(nsets=len(sets), nvalid=nvalid, lhaversion=lhamajversion)
 
 s += """All sets migrated from LHAPDF v5 behave very closely to the originals, usually within
 1 part in 1000 across x,Q space. Sometimes larger, but very localised, deviations are found at the
@@ -38,16 +40,18 @@ for LHAPDF6 by their authors. Red rows indicate those which have not yet been so
 approved. Unvalidated sets may still be used, but please take care.\n\n"""
 
 s += "  <table>\n"
-s += "    <tr><th>%LHAPDF ID</th><th>Set name</th><th>Number of set members</th><th>Latest data version</th><th>Notes</th></tr>\n"
+s += "    <tr><th>%LHAPDF ID</th><th colspan=\"3\">Set name and links</th><th>Number of set members</th><th>Latest data version</th><th>Notes</th></tr>\n"
 
 for lhaid, ps in sorted(sets.items()):
     color = "#fee" if ps.dataversion < 0 else "#efe"
-    baseurl = "http://www.hepforge.org/archive/lhapdf/pdfsets/" + str(lhamajversion)
+    baseurl = "http://lhapdfsets.web.cern.ch/lhapdfsets/current"  # + "/" + str(lhamajversion)
     if ps.dataversion < 0:
-        baseurl += "/unvalidated"
-    url = baseurl + ("/%s.tar.gz" % ps.name)
-    s += '    <tr style="background-color: {col};"><td>{id}</td><td><a href="{url}">{name}</a></td><td>{size}</td><td>{version}</td><td>{note}</td></tr>\n'.\
-         format(col=color, id=lhaid, url=url, name=ps.name, size=ps.size, version=ps.dataversion, note=ps.get_entry("Note", ""))
+        baseurl += "/@UNVALIDATED"
+    tarurl = "{u}/{n}.tar.gz".format(u=baseurl, n=ps.name)
+    infourl = "{u}/{n}/{n}.info".format(u=baseurl, n=ps.name)
+    s += '    <tr style="background-color: {col};"><td>{id}</td><td style="border-right:0px solid;">{name}</td><td style="border-left:0px solid; border-right:0px solid; font-size: smaller;"><a href="{tarurl}">(tarball)</a></td><td style="border-left:0px solid; font-size: smaller;"><a href="{infourl}">(info&nbsp;file)</a></td><td>{size}</td><td>{version}</td><td>{note}</td></tr>\n'. \
+        format(col=color, id=lhaid, tarurl=tarurl, infourl=infourl, name=ps.name,
+               size=ps.size, version=ps.dataversion, note=ps.get_entry("Note", ""))
 
 s += "  </table>\n"
 

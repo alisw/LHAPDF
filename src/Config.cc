@@ -1,13 +1,25 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #include "LHAPDF/Config.h"
 #include "LHAPDF/Version.h"
 using namespace std;
 
 namespace LHAPDF {
+
+
+  Config& Config::get() {
+    static Config _cfg; //< Could we use the Info(path) constructor for automatic init-once behaviour?
+    // Test for emptiness and only initialise *once*:
+    if (_cfg._metadict.empty()) {
+      std::string confpath = findFile("lhapdf.conf");
+      if (confpath.empty()) throw ReadError("Couldn't find required lhapdfd.conf system config file");
+      _cfg.load(confpath);
+    }
+    return _cfg;
+  }
 
 
   Config::~Config() {
@@ -18,7 +30,6 @@ namespace LHAPDF {
       cout << "  Eur.Phys.J. C75 (2015) 3, 132  (http://arxiv.org/abs/1412.7420)" << endl;
     }
   }
-
 
 
 }

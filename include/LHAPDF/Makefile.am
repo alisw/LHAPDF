@@ -9,6 +9,7 @@ pkginclude_HEADERS = \
   GridPDF.h \
   KnotArray.h \
   Utils.h \
+  FileIO.h \
   Paths.h \
   Exceptions.h \
   Factories.h \

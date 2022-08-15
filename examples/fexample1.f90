@@ -11,7 +11,8 @@ program example1
      XX(I) = Z(I) **3
   EndDo
 
-   name='cteq6.LHgrid'
+  name='CT10nlo.LHgrid'
+  ! name='cteq6.LHgrid'
   ! name='cteq65.LHgrid'
   ! name='cteq66.LHgrid'
   ! name='MRST2006nnlo.LHgrid'

@@ -1,0 +1,483 @@
+/**
+@page config Configuration flags
+
+
+LHAPDF v6 CONFIGURATION FLAGS
+=============================
+
+Documentation of the configuration flags for use in LHAPDF at the global
+settings, PDF set info, and PDF member info levels. If a configuration key
+is requested from a PDF member info and is not found, the search will fall
+back to first the PDF set and then to the global config.
+
+
+Note that there is no such thing as a uniquely config-level or set-level
+quantity: all flags may be set at config, set, or member level -- what
+determines the functionality is the value as evaluated on a PDF member
+regardless of whether it is set directly on that member or if it has cascaded
+down from a higher grouping level.
+
+
+CONFIG LEVEL
+============
+
+@note The flags listed here are simply most *likely* to be used at config-level,
+but they can be set differently for each set or for each member in a set if so
+desired. Flags set at a more specific level always take precedence.
+
+
+Verbosity
+---------
+(uint)
+
+Level of verbosity of the LHAPDF system. 0 is silent, 1 is the default and will
+print out minimal information about a PDF set or member when first initialized,
+2 will print out more verbose information, and higher values are reserved for
+future use to print out extremely verbose information during PDF use -- this
+will be for debugging only, since printouts during PDF evaluation will slow down
+the operation of LHAPDF by potentially large factors.
+
+
+ShowBanner
+----------
+(bool)
+
+Whether or not to print out an LHAPDF5-style banner to stdout. (Triggered in Config destructor)
+
+NOT YET IMPLEMENTED! Will be once an LHAPDF6 paper is available to cite...
+
+
+Pythia6LambdaV5Compat
+---------------------
+(bool)
+
+An LHAPDF5 compatibility mode flag which sets all LambdaQCD common block values
+to 0.192 as was historically the case for PYTHIA6's use of LHAPDF. This
+behaviour is physically incorrect, as well as against the spirit of the PYTHIA6
+steering flags, but it is the long-term behaviour of PYTHIA6+LHAPDF and many
+PYTHIA6 MC tunes have been built around this behaviour. This flag is set 'true'
+by default to minimise user surprise -- most users will expect PYTHIA6 to behave
+the same with both LHAPDF5 and 6. If you want LHAPDF6 to report correct,
+i.e. PDF specific, values to PYTHIA6, then explicitly set this flag to be false.
+
+
+SET LEVEL
+=========
+
+@note The flags listed here are simply most *likely* to be used at set-level,
+but they can be set differently for each member in a set (or at the global
+config level) if so desired. Flags set at a more specific level always take
+precedence.
+
+
+SetDesc
+-------
+MANDATORY
+(string)
+
+A human-readable description of this PDF set.
+
+
+SetIndex
+--------
+OPTIONAL, but should be set for sets with assigned LHAPDF IDs
+(int)
+
+The LHAPDF global ID code for the first member in this PDF set.
+
+
+Authors
+-------
+MANDATORY
+(free string)
+
+Authors of this PDF set.
+
+
+Year
+----
+OPTIONAL
+(uint)
+
+Year in which this PDF fit was made.
+
+
+Reference
+---------
+OPTIONAL
+(free string)
+
+A reference to the paper that describes this PDF set. Use semicolons
+to separate a standard journal string, arXiv ID, DOI code, etc.
+
+
+Particle
+--------
+OPTIONAL
+(int): e.g. 2212
+
+The PDG ID code (including nuclear codes) for the parent particle which this PDF
+set (or member) describes. The most common are proton (2212), neutron (2112),
+pion (211), photon (22), and nuclei like the deuteron (1000010020).
+
+
+Flavors
+-------
+MANDATORY
+(list<int> or int): [-5,-4,-3,-2,-1,1,2,3,4,5,21]
+
+List of supported (user-visible) parton flavors, using the PDG Monte Carlo
+numbering scheme (quarks from 1 .. 6, antiquarks from -6 .. -1, and gluon = 21,
+as well as any "optional extras" such as photon = 22).
+
+
+NumMembers
+----------
+MANDATORY
+(uint): 1
+
+How many members there are in the set, including the central member(s) and error
+set members.
+
+@note There is no guarantee that all members are installed or that they are
+consecutively numbered. This number is the official number of members in the
+released set.
+
+
+NumErrorMembers
+---------------
+OPTIONAL... may _become_ mandatory?
+(uint): e.g. 50
+
+How many members there are in the error part of this set, i.e. not counting any
+central member(s).
+
+TODO: Default to NumMembers - 1?
+
+Assumed structure of PDF sets has first error member at Nmem = 1?
+
+@note There is no guarantee that all members are installed or that they are
+consecutively numbered. This number is the official number of error set members
+in the released set.
+
+
+Interpolator
+------------
+MANDATORY (for grid PDFs)
+(enum string): linear, cubic, log, logcubic
+
+The factory name string of the PDF grid interpolator to use -- only *needs* to
+be specified if overriding the default, which is logcubic. Could also be
+member-specific, if necessary. Linear and cubic are respectively linear and cubic interpolation
+in the linear x & Q2 spaces, and log and logcubic are the same but in
+the (recommended) log(x) and log(Q2) spaces.
+
+
+Extrapolator
+------------
+MANDATORY (for grid PDFs)
+(enum string): nearest,error
+
+The factory name string of the PDF grid extrapolator to use. It is recommended
+that this not be set to the "error" value in PDF data files; the choice of
+whether out-of-range PDFs should throw errors should primarily be made by the
+code *user*, and it is not the normally expected behaviour.
+
+
+XMin, XMax
+----------
+MANDATORY
+(float)
+
+Minimum and maximum values of x in the PDF set. Could also be member-specific.
+
+
+QMin, QMax
+------------
+MANDATORY
+(float)
+
+Minimum and maximum values of Q in the PDF set, in GeV. Could also be member-specific.
+
+
+OrderQCD
+--------
+MANDATORY
+(uint): e.g. 2
+
+Maximum number of loops considered in the QCD evolution of this set (i.e. 0 =
+LO, 1 = NLO, etc.)
+
+
+FlavorScheme
+------------
+MANDATORY
+(enum string): fixed/variable
+
+The flavour treatment scheme used in the fit's QCD evolution. alpha_s evolution
+will use this value if AlphaS_FlavorScheme is not explicitly set.
+
+
+NumFlavors
+----------
+MANDATORY
+(uint): e.g. 3, 4 or 5
+
+Maximum/fixed number of flavors used in the fit. alpha_s evolution will use
+this value if AlphaS_NumFlavors is not explicitly set.
+
+
+AlphaS_MZ
+---------
+MANDATORY
+(float): e.g. 0.118
+
+The value of alpha_s at Q = MZ.
+
+
+AlphaS_OrderQCD
+---------------
+MANDATORY
+(uint): e.g. 2
+
+Maximum number of loops considered in the QCD evolution of alpha_s corresponding
+to this PDF set (i.e. 0 = LO, 1 = NLO, etc.)
+
+
+AlphaS_FlavorScheme
+-------------------
+OPTIONAL
+(enum string): fixed/variable
+
+The flavour treatment scheme used in alpha_s evolution for this PDF fit.
+If unset, alpha_s evolution will fall back to using the FlavorScheme flag which
+represents the QCD evolution used for the whole set, not just the alpha_s part.
+
+
+AlphaS_NumFlavors
+-----------------
+OPTIONAL
+(uint): e.g. 3, 4 or 5
+
+Maximum/fixed number of flavors used in alpha_s evolution for this PDF fit.
+If unset, alpha_s evolution will fall back to using the NumFlavors flag which
+represents the QCD evolution used for the whole set, not just the alpha_s part.
+
+
+AlphaS_Type
+-----------
+MANDATORY
+(enum string): ode, analytic, ipol
+
+The method to be used to calculate alpha_s for this set (cf. the AlphaS class
+hierarchy).
+
+
+AlphaS_Qs, AlphaS_vals
+----------------------
+MANDATORY if AlphaS_Type = ipol
+(2 x list<float>)
+
+A pair of lists for interpolation-based alpha_s(Q) solving (i.e. Alphas_Type =
+ipol). The values of Q are in GeV, and the two lists must be the same length. If
+only one of these keys is defined, or if their lengths are different, a metadata
+exception will be thrown.
+
+
+AlphaS_Lambda3, AlphaS_Lambda4, AlphaS_Lambda5
+----------------------------------------------
+MANDATORY if AlphaS_Type = analytic
+(float): e.g. 0.192
+
+The value of Lambda_QCD in 3, 4 and 5 flavour schemes, used with
+AlphaS_OrderQCD in determining an alpha_s evolution corresponding
+to this PDF set if the analytic alpha_s evaluation scheme is used.
+
+A contiguous range of Lambda_n's must be provided, e.g. (3,4,5) or (4,5) or just
+(5) are ok, but (3,5) is not.
+
+
+ErrorType
+---------
+OPTIONAL (but should be present if there is an error set)
+(enum string): replicas, symmhessian, hessian, custom, none
+
+A set-level declaration of the type of error treatment provided by this set.
+
+Additional members can be given at the end of a set to allow estimation of
+uncertainties due to parameter variation (for example, alphaS or heavy-quark masses),
+with string-formatting rules to specify how they are to be combined.
+
+The top-level division of the error-type string is into components to be combined
+in signed quadrature (i.e. separate quadrature combination for positive and negative
+variations of the observable from the nominal. These components are separated by `+`
+signs in the ErrorType string.
+
+Each quadrature component is treated as a (+,-) pair, in general formed from the
+envelope of several variation members. The named terms in such an envelope are
+separated by `*` symbols, and their core name should follow C-like naming
+restrictions: alphanumeric and underscore characters, and they cannot start with
+a digit. You are encouraged to keep these names simple and limit use of
+underscores to essential situations.
+
+Each term corresponds to either one or two PDF members, depending on the optional
+presence of a prefix symbol:
+- if there is no prefix preceding the core name, it is taken to denote a
+  (usually "up/down") parameter-variation pair;
+- if there is a preceding `#` character, the term is derived from a single member
+  with a resulting (+,0) or (0,-) error pair;
+- and if prefixed by a `$` character, it represents a single variation-member
+  whose effect is to be symmetrised to a (delta,delta) error pair.
+A generally asymmetric envelope is returned from the union of these pairs as the
+total (+,-) pair for that quadrature term.
+
+Examples:
+- `symmhessian`: a symmetric Hessian PDF error-set with no parameter variations.
+- `replicas+alphas+mb`: a replica set with two pairs of parameter variations to be combined in quadrature.
+- `hessian+alphas+$mc`: a Hessian set with a pair variation and a single-member variation to be symmetrised.
+- `replicas+alphas+#fit1*#fit2*$foo+mb`: a replica set with a 3-member envelope made from a mix of asymmetric
+    and symmetrised variations, and a final pair of variations: 4 error-groups to be combined in quadrature.
+
+See the demonstration programs in "examples/testpdfunc.cc" and "examples/testpdfunc.py".
+
+
+ErrorConfLevel
+--------------
+OPTIONAL (but should be present if there is a Hessian error set
+with confidence level not equal to 1-sigma)
+(int/float): e.g. 90
+
+The confidence level of the Hessian error set eigenvectors, in percent.
+If not present, assume 1-sigma = erf(1/sqrt(2)) = 68.2689...% by default.
+
+
+CentralMember
+-------------
+OPTIONAL
+(int): e.g. 0
+
+The member ID in this PDF set of the main ("central") member. Usually 0. A
+negative value indicates that this set has no central member.
+
+
+FirstErrorMember
+----------------
+OPTIONAL
+(uint): e.g. 1
+
+The member ID in this PDF set of the first member of an error set. Usually 1.
+
+
+MZ, MDown, MUp, MStrange, MCharm, MBottom, MTop
+-----------------------------------------------
+OPTIONAL
+(float)
+
+Masses of quarks and the Z0 boson in this PDF set's evolution. Default values
+are set in the global LHAPDF config.
+
+
+ThresholdDown, ThresholdUp, ThresholdStrange, ThresholdCharm, ThresholdBottom, ThresholdTop
+-------------------------------------------------------------------------------------------
+OPTIONAL
+(float)
+
+Flavour activation thresholds for the quarks in this PDF set's evolution.
+The masses (MDown, MUp, etc.) are used as default values if these are not set.
+
+
+AlphaS_MDown, AlphaS_MUp, AlphaS_MStrange, AlphaS_MCharm, AlphaS_MBottom, AlphaS_MTop
+-------------------------------------------------------------------------------------
+OPTIONAL
+(float)
+
+Masses of quarks used in alpha_s evolution for this PDF. The raw PDF MDown,
+MUp, etc. are used by default.
+
+
+AlphaS_ThresholdDown, AlphaS_ThresholdUp, AlphaS_ThresholdStrange, AlphaS_ThresholdCharm, AlphaS_ThresholdBottom, AlphaS_ThresholdTop
+-------------------------------------------------------------------------------------------------------------------------------------
+OPTIONAL
+(float)
+
+Flavour activation thresholds for the quarks in alpha_s evolution for this PDF.
+The raw PDF ThresholdDown, ThresholdUp, etc. are used by default, with fallback
+to AlphaS_Threshold* and AlphaS_M* values.
+
+
+MinLHAPDFVersion
+----------------
+OPTIONAL but should be present if some LHAPDF6 versions are incompatible.
+(int): e.g. 600001
+
+Minimal LHAPDF version code (integerised) needed to use this PDF.
+
+
+DataVersion
+-----------
+MANDATORY
+(int, default = -1)
+
+The version of this PDF's data file, used to version fixes to the set.
+
+@note Use a zero or negative value to flag this PDF as unsuitable for production
+use. The LHAPDF system will produce a warning printout in that case.
+
+
+ForcePositive
+-------------
+OPTIONAL
+(uint = 0,1,2, default = 0)
+
+If 0, no positivity forcing will be made. If 1, force returned PDF values to be
+positive (always > 0), to avoid accidental interpolation overshoots into
+negative values. If 2, force returned PDF values to be positive definite (always
+> 1e-10), to avoid both negative values and *also* ensure that the PDF is never
+exactly 0, to avoid issues with reweighting.
+
+
+Note
+----
+OPTIONAL
+(str)
+
+An important short piece of usage information about this PDF set. Only use it
+exceptionally, e.g. for marking that a PDF set is deprecated and users should
+avoid it. The note will be printed into the online PDF table, and possibly used
+by other external programs, but does not affect normal runtime behaviour.
+
+
+
+MEMBER LEVEL
+============
+
+@note The flags listed here are simply most *likely* to be used at member-level,
+but they can also be set at the set or global config level if so desired. This
+tends not to make sense for most of the flags listed here, however. Flags set at
+a more specific level always take precedence.
+
+Format
+------
+MANDATORY
+(enum string): lhagrid1, ... the trailing number is for format versioning.
+
+Used to determine what parser should be instantiated to read the member file(s).
+
+
+PdfDesc
+-------
+OPTIONAL
+(free string): Description of the role of this PDF member
+
+
+PdfType
+-------
+MANDATORY
+(enum string): 'central' or 'error' or 'replica' or 'variation'
+
+The type of this PDF, i.e. is it a central (canonical) PDF or is it meant for
+use as either a Hessian error or a replica member of a statistical ensemble.
+Parameter variation members given at the end of a set should have type 'variation',
+(but 'central' is allowed for backward compatibility).
+
+*/

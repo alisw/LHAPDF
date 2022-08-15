@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_PDF_H
@@ -20,6 +20,20 @@
 namespace LHAPDF {
 
 
+  /// @defgroup partonids Parton ID codes
+  /// @{
+  /// Convenience/clarity enum for specifying parton IDs
+  namespace PIDs { //< for scoping to avoid conflicts, e.g. PID::GLUON rather than just GLUON
+    enum PIDCode {
+      ATOP = -6, ABOTTOM = -5, ACHARM = -4, ASTRANGE = -3, AUP = -2, ADOWN = -1,
+      GLUON = 0, // equivalent to 21
+      DOWN = 1, UP = 2, STRANGE = 3, CHARM = 4, BOTTOM = 5, TOP = 6
+    };
+  }
+  /// @}
+
+
+
   /// @brief PDF is the general interface for access to parton density information.
   ///
   /// The PDF interface declares the general form of all PDF types, such as Grid based or analytic.
@@ -27,31 +41,23 @@ namespace LHAPDF {
   protected: //< These constructors should only be called by subclasses
 
     /// Internal convenience typedef for the AlphaS object handle
-    /// @todo Reinstate this unique_ptr when C++98 header compatibility is no longer an issue
-    // typedef unique_ptr<AlphaS> AlphaSPtr;
-    typedef AlphaS* AlphaSPtr;
+    typedef unique_ptr<AlphaS> AlphaSPtr;
 
     /// Force initialization of the only non-class member.
-    /// @todo Remove _alphas initialisation when it can be a smart ptr again
-    PDF() : _alphas(0), _forcePos(0) { }
+    PDF() : _forcePos(0) { }
 
 
   public:
 
     /// Virtual destructor, to allow unfettered inheritance
-    virtual ~PDF() {
-      /// @todo Remove this delete when C++98 is gone, and unique_ptr can be reinstated
-      delete _alphas;
-    }
-
-    //@}
+    virtual ~PDF() { }
 
 
   protected:
 
 
     /// @name Helper methods for info loading / path setting, used by derived types
-    //@{
+    ///@{
 
     void _loadInfo(const std::string& mempath);
 
@@ -69,13 +75,13 @@ namespace LHAPDF {
       _loadInfo(setname_memid.first, setname_memid.second);
     }
 
-    //@}
+    ///@}
 
 
   public:
 
     /// @name PDF values
-    //@{
+    ///@{
 
     /// @brief Get the PDF xf(x) value at (x,q2) for the given PID.
     ///
@@ -142,6 +148,7 @@ namespace LHAPDF {
     /// @param rtn Vector of PDF xf(x,q2) values, to be filled
     void xfxQ2(double x, double q2, std::vector<double>& rtn) const;
 
+    
     /// @brief Get the PDF xf(x) value at (x,q) for "standard" PIDs.
     ///
     /// This version fills a user-supplied vector to avoid container
@@ -202,13 +209,15 @@ namespace LHAPDF {
     /// @return the value of xf(x,q2)
     virtual double _xfxQ2(int id, double x, double q2) const = 0;
 
-    //@}
+    virtual void _xfxQ2(double x, double q2, std::vector<double>& ret) const = 0;
+
+    ///@}
 
 
   public:
 
     /// @name Ranges of validity
-    //@{
+    ///@{
 
     /// Minimum valid x value for this PDF.
     virtual double xMin() {
@@ -247,7 +256,8 @@ namespace LHAPDF {
       return (info().has_key("QMax")) ? sqr(info().get_entry_as<double>("QMax")) : numeric_limits<double>::max();
     }
 
-    /// @brief Check whether PDF is set to only return positive (definite) values or not.
+
+    /// @brief Check whether the PDF is set to only return positive (definite) values or not.
     ///
     /// This is to avoid overshooting in to negative values when
     /// interpolating/extrapolating PDFs that sharply decrease towards zero.
@@ -257,6 +267,11 @@ namespace LHAPDF {
         _forcePos = info().get_entry_as<unsigned int>("ForcePositive", 0);
       return _forcePos;
     }
+    /// @brief Set whether the PDF will only return positive (definite) values or not.
+    void setForcePositive(int mode) {
+      _forcePos = mode;
+    }
+
 
     /// @brief Check whether the given x is physically valid
     ///
@@ -327,11 +342,11 @@ namespace LHAPDF {
       return inRangeX(x) && inRangeQ2(q2);
     }
 
-    //@}
+    ///@}
 
 
     /// @name Generic member-level metadata (including cascaded metadata from set & config level)
-    //@{
+    ///@{
 
     /// Get the info class that actually stores and handles the metadata
     PDFInfo& info() { return _info; }
@@ -346,11 +361,11 @@ namespace LHAPDF {
       return getPDFSet(_setname());
     }
 
-    //@}
+    ///@}
 
 
     /// @name Member-level metadata
-    //@{
+    ///@{
 
     /// @brief PDF member local ID number
     ///
@@ -382,7 +397,7 @@ namespace LHAPDF {
       return to_lower(info().get_entry("PdfType"));
     }
 
-    //@}
+    ///@}
 
 
     /// Summary printout
@@ -390,7 +405,7 @@ namespace LHAPDF {
 
 
     /// @name Parton content and QCD parameters
-    //@{
+    ///@{
 
     /// @brief List of flavours defined by this PDF set.
     ///
@@ -408,6 +423,14 @@ namespace LHAPDF {
       return _flavors;
     }
 
+    /// @brief Manually set/override the list of flavours defined by this PDF set.
+    ///
+    /// @note The provided vector will be internally sorted into ascending numeric order.
+    void setFlavors(std::vector<int> const& flavors) {
+      _flavors = flavors;
+      sort(_flavors.begin(), _flavors.end());
+    }
+
     /// Checks whether @a id is a valid parton for this PDF.
     bool hasFlavor(int id) const;
 
@@ -416,6 +439,8 @@ namespace LHAPDF {
     /// "Order" is defined here and throughout LHAPDF as the maximum number of
     /// loops included in the matrix elements, in order to have an integer value
     /// for easy use in comparisons, as opposed to "LO", "NLO", etc. strings.
+    ///
+    /// @todo Provide a setter function?
     int orderQCD() const {
       return info().get_entry_as<int>("OrderQCD");
     }
@@ -426,31 +451,40 @@ namespace LHAPDF {
     ///
     /// Convenience interface to the Mass* info keywords.
     /// Returns -1 for an undefined PID.
+    ///
+    /// @todo Provide a setter function?
     double quarkMass(int id) const;
 
     /// @brief Get a flavor scale threshold in GeV by PDG code (|PID| = 1-6 only)
     /// Convenience interface to the Mass* and Threshold* info keywords.
     /// Returns -1 for an undefined PID.
+    ///
+    /// @todo Provide a setter function?
     double quarkThreshold(int id) const;
 
-    //@}
+    ///@}
 
 
     /// @name QCD running coupling calculation
-    //@{
+    ///@{
 
     /// @brief Set the AlphaS calculator by pointer
     ///
-    /// The provided AlphaS must have been new'd, as it will not be copied
-    /// and ownership passes to this GridPDF: delete will be called on this ptr
-    /// when this PDF goes out of scope or another setAlphaS call is made.
+    /// The provided AlphaS must have been new'd, as it will not be copied and
+    /// ownership passes to this GridPDF: it will be deleted when this PDF goes
+    /// out of scope or another setAlphaS call is made.
     void setAlphaS(AlphaS* alphas) {
-      // _alphas.reset(alphas);
+      _alphas.reset(alphas);
+    }
+
+    /// @brief Set the AlphaS calculator by smart pointer
+    void setAlphaS(AlphaSPtr alphas) {
+      _alphas = std::move(alphas);
     }
 
     /// @brief Check if an AlphaS calculator is set
     bool hasAlphaS() const {
-      return _alphas;
+      return bool(_alphas);
     }
 
     /// @brief Retrieve the AlphaS object for this PDF
@@ -480,15 +514,13 @@ namespace LHAPDF {
       return _alphas->alphasQ2(q2);
     }
 
-    //@}
+    ///@}
 
 
   protected:
 
     void _loadAlphaS() {
-      // _alphas.reset( mkAlphaS(info()) );
-      if (hasAlphaS()) delete _alphas;
-      _alphas = mkAlphaS(info());
+      _alphas.reset( mkAlphaS(info()) );
     }
 
     /// Get the set name from the member data file path (for internal use only)
@@ -502,13 +534,13 @@ namespace LHAPDF {
     /// Metadata container
     PDFInfo _info;
 
-    /// Locally cached list of supported PIDs
+    /// Locally cached list of supported PIDs (mutable for laziness/caching)
     mutable vector<int> _flavors;
 
-    /// Optionally loaded AlphaS object
+    /// Optionally loaded AlphaS object (mutable for laziness/caching)
     mutable AlphaSPtr _alphas;
 
-    /// @brief Cached flag for whether to return only positive (or postive definite) PDF values
+    /// @brief Cached flag for whether to return only positive (or positive definite) PDF values
     ///
     /// A negative value indicates that the flag has not been set. 0 = no
     /// forcing, 1 = force positive (i.e. 0 is permitted, negative values are

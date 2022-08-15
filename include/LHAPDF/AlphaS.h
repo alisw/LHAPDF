@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_AlphaS_H
@@ -12,6 +12,7 @@
 #include "LHAPDF/KnotArray.h"
 
 namespace LHAPDF {
+
 
   /// @brief Calculator interface for computing alpha_s(Q2) in various ways
   ///
@@ -30,7 +31,7 @@ namespace LHAPDF {
     virtual ~AlphaS() {};
 
     /// @name alpha_s values
-    //@{
+    ///@{
 
     /// Calculate alphaS(Q)
     double alphasQ(double q) const { return alphasQ2(q*q); }
@@ -39,11 +40,11 @@ namespace LHAPDF {
     /// @todo Throw error in this base method if Q < Lambda?
     virtual double alphasQ2(double q2) const = 0;
 
-    //@}
+    ///@}
 
 
     /// @name alpha_s metadata
-    //@{
+    ///@{
 
     /// Calculate the number of active flavours at energy scale Q
     int numFlavorsQ(double q) const { return numFlavorsQ2(q*q); }
@@ -104,9 +105,7 @@ namespace LHAPDF {
     /// Used in the analytic solver.
     virtual void setLambda(unsigned int, double) {};
 
-    //@}
-
-    /// enum of flavor schemes
+    /// Enum of flavor schemes
     enum FlavorScheme { FIXED, VARIABLE };
 
     /// Get the implementation type of this AlphaS
@@ -118,11 +117,13 @@ namespace LHAPDF {
     /// Get flavor scheme
     FlavorScheme flavorScheme() const { return _flavorscheme; }
 
+    ///@}
+
 
   protected:
 
     /// @name Calculating beta function values
-    //@{
+    ///@{
 
     /// Calculate the i'th beta function given the number of active flavours
     /// Currently limited to 0 <= i <= 3
@@ -133,7 +134,7 @@ namespace LHAPDF {
     /// Currently returns a 4-element vector of beta0 -- beta3
     std::vector<double> _betas(int nf) const;
 
-    //@}
+    ///@}
 
 
   protected:

@@ -1,4 +1,4 @@
-dnl Taken from the python bindings to the Enlightenment foundation libraries, 
+dnl Taken from the python bindings to the Enlightenment foundation libraries,
 dnl and was part of a GPL package. I have included this file to fix the build.
 dnl
 dnl
@@ -12,7 +12,7 @@ ifelse([$1], [], [_msg=""], [_msg=" >= $1"])
 AC_MSG_CHECKING(for Cython$_msg)
 AC_CACHE_VAL(py_cv_cython, [
 
-prog="import Cython.Compiler.Version; print Cython.Compiler.Version.version"
+prog="from __future__ import print_function; import Cython.Compiler.Version; print(Cython.Compiler.Version.version)"
 CYTHON_VERSION=`$PYTHON -c "$prog" 2>&AC_FD_CC`
 
 py_cv_cython=no

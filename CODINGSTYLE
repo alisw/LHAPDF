@@ -1,0 +1,84 @@
+/**
+@page codingstyle Coding style
+
+LHAPDF C++ CODING STYLE
+=======================
+
+A short guide for developers and patch suppliers on the C++ coding style used in
+LHAPDF >= 6.
+
+- The basic style is the ["one true brace style"](http://en.wikipedia.org/wiki/Indent_style#Variant:_1TBS).
+  The exception is for constructors with initialisation lists, in which case the
+  function body should be opened by a brace on its own on a new line, rather
+  than the brace trailing the init list entries.
+
+- Indent! The standard indent size in the current code is two spaces. Do not
+  indent with tab characters.
+
+- Infix operators like = (assignment), logical comparators (==, !=, >, <, >=,
+  etc.), + and -, and all arithmetic modifying operators (+=, -=, *=, /=) should
+  be separated from their arguments on either side by a single space. Spaces are
+  cheap, the time taken to decipher hyper-compressed code is not! The * and /
+  operators should be padded like this if it aids readability, but not
+  otherwise: it is useful to visually distinguish addition of terms from the
+  multiplications/divisions which compose them.
+
+- The parenthetical condition statement of an "if", "for", "while", etc. block
+  should be separated from the "if" etc. keyword and from the opening brace of
+  the block by one space. The contents of the parenthesis should not be
+  space-padded, however, unless it is necessary for clarity (the same applies to
+  function arguments). For example, "if (foo > bar) { ...". Again, spaces are
+  cheap: use them.
+
+- Braces are encouraged around all but the most trivial control blocks: if you
+  cannot put the one-line block content on the *same* line as the block
+  condition statement, or if there is any visual ambiguity about which lines are
+  in the block body, add braces.
+
+- if-statement and exception continuations should normally be on the same line
+  as the delimiting braces in 1TBS fashion, e.g. "} else {", "} else if (foo !=
+  bar) {", etc.
+
+- All code should be in the LHAPDF namespace. In .cc files, unnamed namespaces
+  should be used to hide implementation detail functions from public/ABI view.
+
+- Class names are in CamelCase format, and method and function names in
+  lowerCamelCase. In the class names "PDF" is always kept fully capitalised,
+  while in method and function names it may appear as "pdf" or "Pdf" depending
+  on context: try to be consistent with the "local environment". Private or
+  protected members, or more generally any API element not designed for public
+  use should start with a leading underscore, cf.  _implementationDetail.
+
+- Separate blocks within functions by a blank line, separate functions by two
+  blank lines, and separate class definitions by 3 blank lines. Two blank lines
+  of separation should be left between the main LHAPDF namespace opening and
+  closing braces and the first and last code lines in the namespace. These are
+  just guidelines: if more lines of separation than these nominals are needed
+  for visual clearance of distinct code elements, add more: blank lines are also
+  pretty cheap, but don't go crazy or you'll hardly be able to fit any lines of
+  active code on your screen!
+
+- Use the specialised LHAPDF exceptions from LHAPDF/Exceptions.h. Exceptions
+  should be used rather than asserts unless there is absolutely no way that the
+  tested condition could happen other than a bug in the system: the user should
+  be able to catch their own errors.
+
+- We don't rely on external libraries for core functionality.  Get a feel for
+  what is available in the LHAPDF/Utils.h header: do not reinvent the wheel.
+
+- "Flavour" is spelt the American way, "flavor" in all places in the code, for
+  definiteness.
+
+- Use comments! Describe what sections of not-immediately-clear code do in as
+  clear and concise a way as possible, preferably on one line. In header files
+  use Doxygen /// comments and operators with an @ delimiter (particularly "@todo")
+  to describe the meanings of classes, methods, their arguments, etc. While writing
+  code it's often best to leave some details until later -- mark these with a
+  "@todo" operator and a description of the missing feature: these will be collected
+  into a helpful list by Doxygen.
+
+- If in doubt, ask!
+
+THANKS FOR READING :-)
+
+*/

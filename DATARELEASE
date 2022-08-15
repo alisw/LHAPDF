@@ -1,0 +1,54 @@
+LHAPDF6 PDF set release procedure
+=================================
+
+Releasing a new PDF set is primarily to be done via the CVMFS distributed
+filesystem: this is now the canonical data archive, with copies on AFS and
+HepForge being secondary (and subject to future removal).
+
+PRELIMINARY: You will need an up-to-date copy of LHAPDF, e.g. version 6.2.1 or
+the hg head. It's best to build this on lxplus7, which has a system C++ compiler
+that supports the C++11 standard, and has CVMFS mounted at /cvmfs. You will need
+to set the environment so it picks up the libLHAPDF library from LD_LIBRARY_PATH
+and the Python module from PYTHONPATH.
+
+1. In the expanded-tarball/hg-checkout directory, make a testing directory
+e.g. TESTPDFS, and download the PDF set tarballs supplied by the fitting group
+into it. Each tarball must have filename format my_set_name.tar.gz -- no .tgz
+file extensions, please!
+
+2. Check that each tarball expands to a directory with the same name as the
+tarball without the .tar.gz suffix, containing similarly named files: a
+mandatory my_set_name.info, and N x my_set_name_0000.dat, my_set_name_0001.dat,
+etc.
+
+3. Test each set's .info file for format correctness:
+  ./testinfo TESTPDFS/*/*.info
+If everything is ok, it will be silent.
+
+4. Test each set for basic operation:
+  export LHAPDF_DATA_PATH=$PWD/TESTPDFS:$PWD::
+  for i in `find TESTPDFS -mindepth 1 -type d -exec basename {} \;`; do ./testpdfs $i; done
+
+5. Ok, everything seems to be basically working. So we move the new set tarballs
+and expanded dirs into the CVMFS downloads area, via the AFS one:
+  mv TESTPDFS/* /afs/cern.ch/sw/lcg/external/lhapdfsets/current/
+
+6. Backup and regenerate the pdfsets.index file and the Doxygen version which
+will become the table on the website:
+  export LHAPDF_DATA_PATH=/afs/cern.ch/sw/lcg/external/lhapdfsets/current/::
+  cp pdfsets.index{,.bak}
+  ./mkindex > pdfsets.index
+  diff pdfsets.index{.bak,}
+  -> sanity-check the diff to see that the expected sets have been added, and have distinct IDs
+  cd doc
+  cp pdfsets.dox{,.bak}
+  ./mkpdflist > pdfsets.dox
+  diff pdfsets.dox{.bak,}
+  -> minimal sanity check the diff
+
+7. Copy the new index file on to AFS/CVMFS:
+  cp pdfsets.index /afs/cern.ch/sw/lcg/external/lhapdfsets/current/
+  And sync to CVMFS...
+
+8. Send new pdfsets.index and pdfsets.dox files to AB, who'll commit them to hg,
+and update the website & HepForge downloads area.

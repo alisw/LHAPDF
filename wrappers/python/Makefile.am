@@ -1,8 +1,8 @@
-EXTRA_DIST = lhapdf.cpp lhapdf.pyx clhapdf.pxd
+EXTRA_DIST = lhapdf.cpp lhapdf.pyx clhapdf.pxd __init__.py
 
 if WITH_CYTHON
 lhapdf.cpp: lhapdf.pyx clhapdf.pxd
-	cython lhapdf.pyx --cplus
+	cython $(srcdir)/lhapdf.pyx --cplus -2 -o lhapdf.cpp
 else
 lhapdf.cpp:
 	@echo "Not (re)generating lhapdf.cpp since Cython is not installed"
@@ -25,18 +25,21 @@ fix-out-of-source: $(FIXSOURCES)
 
 if WITH_PYTHON
 
-PYEXT_ENV = CC="$(CXX)" CXX="$(CXX)"
+#AM_CPPFLAGS =
+PYEXT_ENV = CC="$(CXX)" CXX="$(CXX)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" CPPFLAGS="$(CPPFLAGS) -I$(srcdir)"
 
-## Always force setup.py, it's not good at guessing what needs to rebuild
 all-local: fix-out-of-source
-	$(PYEXT_ENV) $(PYTHON) setup.py install --install-lib=build/ --force
+	@test "${FORCE}" = 1 && touch lhapdf.pyx || true
+	$(PYEXT_ENV) $(PYTHON) build.py
 
 install-exec-local:
-	$(PYEXT_ENV) $(PYTHON) setup.py install --prefix=$(DESTDIR)$(prefix) --force
+	$(MKDIR_P) $(DESTDIR)$(PYTHON_PATH)/ && \
+	cp -r $(abs_builddir)/build/lhapdf $(DESTDIR)$(PYTHON_PATH)/
 
 uninstall-local:
-	rm -f $(DESTDIR)$(PYTHON_PATH)/lhapdf.so
-	rm -f  $(DESTDIR)$(PYTHON_PATH)/LHAPDF-$(VERSION)-py$(PYTHON_VERSION).egg-info
+	rm -rf $(DESTDIR)$(PYTHON_PATH)/lhapdf; \
+	rmdir $(DESTDIR)$(PYTHON_PATH) || true
+
 
 clean-local: fix-out-of-source
 	@rm -f $(builddir)/*.pyc
@@ -46,7 +49,7 @@ clean-local: fix-out-of-source
 	rm -f $<
 
 distclean-local:
-	@rm -f LHAPDF.egg-info
+	@true
 
 else
 

@@ -2,13 +2,19 @@
 
 set -e
 
+make check
+
 test -d TEST || mkdir TEST
 cd TEST
 
 ../testpdfs CT10nlo/0
 ../testpdfs MSTW2008nlo68cl/0
-../testpdfs NNPDF30_nlo_as_0118/0
+../testpdfs NNPDF31_nnlo_as_0118/0
 
-../plotpdfs CT10nlo/0 MSTW2008nlo68cl/0 NNPDF30_nlo_as_0118/0
+../examples/testpdfunc NNPDF31_nnlo_as_0118
 
-valgrind ../tests/testgrid && rm -f pdf.dat
+../plotpdfs CT10nlo/0 MSTW2008nlo68cl/0 NNPDF31_nnlo_as_0118/0
+
+if [[ -e $(which valgrind) ]]; then
+    valgrind ../tests/testgrid && rm -f pdf.dat
+fi

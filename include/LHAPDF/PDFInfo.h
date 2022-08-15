@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // This file is part of LHAPDF
-// Copyright (C) 2012-2016 The LHAPDF collaboration (see AUTHORS for details)
+// Copyright (C) 2012-2022 The LHAPDF collaboration (see AUTHORS for details)
 //
 #pragma once
 #ifndef LHAPDF_PDFInfo_H
@@ -17,9 +17,6 @@ namespace LHAPDF {
   /// Metadata class for PDF members
   class PDFInfo : public Info {
   public:
-
-    /// @name Creation and deletion
-    //@{
 
     /// Default constructor (for container compatibility)
     ///
@@ -40,11 +37,9 @@ namespace LHAPDF {
     /// Constructor from an LHAPDF ID code.
     PDFInfo(int lhaid);
 
-    //@}
-
 
     /// @name Metadata accessors
-    //@{
+    ///@{
 
     /// Can this Info object return a value for the given key? (it may be defined non-locally)
     bool has_key(const std::string& key) const;
@@ -57,7 +52,7 @@ namespace LHAPDF {
       return Info::get_entry(key, fallback);
     }
 
-    //@}
+    ///@}
 
 
   private:
